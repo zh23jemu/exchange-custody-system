@@ -1,0 +1,113 @@
+# 资金流程图
+
+---
+
+## 一、完整资金流转总览
+
+```mermaid
+flowchart TD
+    A([👤 客户]) --> B{存款方式}
+
+    B -->|现金| C[💵 交给中转商]
+    B -->|银行转账| D[🏦 直接入公司账号]
+
+    C --> E[中转商代转]
+    E --> F[📥 公司账号收款]
+    D --> F
+
+    F --> G{资金用途}
+
+    G -->|按客户指示换汇| H[💱 货币兑换]
+    G -->|转出到客户指定账号| I[📤 对外转账]
+    G -->|暂时保留| J[⏳ 代管中]
+
+    H --> K[目标货币账号]
+    K --> I
+    J --> I
+
+    I --> L([✅ 客户目标账号到账])
+    L --> M[📝 更新客户流水]
+    M --> N[📊 客户账单报表]
+
+    style A fill:#dbeafe,stroke:#2563eb
+    style L fill:#dcfce7,stroke:#16a34a
+    style F fill:#fef9c3,stroke:#ca8a04
+    style N fill:#f3e8ff,stroke:#9333ea
+    style J fill:#fff7ed,stroke:#ea580c
+```
+
+---
+
+## 二、现金订单流程
+
+```mermaid
+flowchart LR
+    A[创建现金订单] --> B[待处理]
+    B -->|交给中转商| C[交中转商]
+    C -->|中转商已转账\n公司确认收款| D[在公司账号]
+    D -->|完成转出| E[已完成]
+
+    style A fill:#f1f5f9,stroke:#64748b
+    style B fill:#fef9c3,stroke:#ca8a04
+    style C fill:#fed7aa,stroke:#ea580c
+    style D fill:#bbf7d0,stroke:#16a34a
+    style E fill:#a5f3fc,stroke:#0891b2
+```
+
+**适用场景**：客户交来现金 → 经中转商（如 Bob）转账入公司账号 → 再完成换汇转出
+
+---
+
+## 三、直接转账订单流程
+
+```mermaid
+flowchart LR
+    A[创建转账订单] --> B[在公司账号]
+    B -->|确认到账后完成| C[已完成]
+
+    style A fill:#f1f5f9,stroke:#64748b
+    style B fill:#bbf7d0,stroke:#16a34a
+    style C fill:#a5f3fc,stroke:#0891b2
+```
+
+**适用场景**：客户直接银行转账入公司账号，无需中转商
+
+---
+
+## 四、订单状态总览
+
+```mermaid
+stateDiagram-v2
+    [*] --> 待处理 : 创建现金订单
+    [*] --> 在公司账号 : 创建转账订单
+
+    待处理 --> 交中转商 : 交给中转商
+    交中转商 --> 在公司账号 : 确认到账
+    在公司账号 --> 已完成 : 完成
+
+    已完成 --> [*]
+```
+
+---
+
+## 五、货币兑换流程
+
+```mermaid
+flowchart LR
+    A[选择公司账号] --> B[选择源货币 + 数量]
+    B --> C[设置兑换汇率]
+    C --> D[选择目标货币]
+    D --> E[执行兑换]
+    E --> F[记录兑换历史\n更新账号余额]
+
+    style E fill:#dcfce7,stroke:#16a34a
+    style F fill:#f3e8ff,stroke:#9333ea
+```
+
+---
+
+## 相关文档
+
+- [[软件说明]]
+- [[使用指南]]
+- [[系统结构]]

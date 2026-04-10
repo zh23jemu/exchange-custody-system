@@ -1,0 +1,2114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💱 FundFlow - Fund Transfer Management System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f6fa;
+            color: #2c3e50;
+        }
+
+        /* 语言切换器 */
+        .lang-switcher {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 5px;
+            background: rgba(255,255,255,0.1);
+            padding: 5px;
+            border-radius: 20px;
+        }
+        .lang-btn {
+            padding: 5px 15px;
+            border: none;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            transition: all 0.3s;
+        }
+        .lang-btn.active {
+            background: white;
+            color: #667eea;
+        }
+
+        /* 头部 */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+
+        /* 统计卡片 */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .stat-card .label { color: #7f8c8d; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-card .value { font-size: 24px; font-weight: bold; }
+
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            background: white;
+            border-bottom: 2px solid #e0e0e0;
+            max-width: 1400px;
+            margin: 0 auto;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .tab:hover { background: #f8f9fa; }
+        .tab.active { border-bottom-color: #667eea; color: #667eea; }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .tab-content.active { display: block; }
+
+        /* 卡片 */
+        .form-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .form-card h3 {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* 按钮 */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a6fd6; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #219a52; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #d68910; }
+        .btn-info { background: #3498db; color: white; }
+        .btn-info:hover { background: #2980b9; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 表格 */
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow-x: auto;
+        }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th {
+            background: #f8f9fa;
+            padding: 15px 12px;
+            text-align: left;
+            font-size: 13px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        tr:hover { background: #f8f9fa; }
+
+        /* 徽章 */
+        .status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        .status.pending { background: #fff3cd; color: #856404; }
+        .status.completed { background: #d4edda; color: #155724; }
+        .status.in_progress { background: #e3f2fd; color: #1565c0; }
+
+        .currency-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .currency-badge.AUD { background: #e3f2fd; color: #1565c0; }
+        .currency-badge.USD { background: #e8f5e9; color: #2e7d32; }
+        .currency-badge.CNY { background: #ffebee; color: #c62828; }
+        .currency-badge.EUR { background: #fff3e0; color: #e65100; }
+        .currency-badge.GBP { background: #fce4ec; color: #c2185b; }
+        .currency-badge.HKD { background: #e0f7fa; color: #00838f; }
+
+        .entity-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .entity-badge.customer { background: #e3f2fd; color: #1565c0; }
+        .entity-badge.supplier { background: #fff3e0; color: #e65100; }
+        .entity-badge.company { background: #f3e5f5; color: #7b1fa2; }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { margin: 0; }
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .modal-body { padding: 20px; }
+
+        /* 消息 */
+        .message {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .message.success { background: #d4edda; color: #155724; }
+        .message.error { background: #f8d7da; color: #721c24; }
+        .message.info { background: #e3f2fd; color: #1565c0; }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 15px; }
+
+        /* 两栏布局 */
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .two-columns { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* 操作按钮 */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .action-buttons .btn {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        /* 总览卡片 */
+        .overview-section {
+            margin-bottom: 20px;
+        }
+        .overview-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .overview-section-title {
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #667eea;
+        }
+
+        /* 隐藏状态 */
+        .hidden-section { display: none; }
+
+        /* 换汇计算结果 */
+        .exchange-result {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        .exchange-result .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        .exchange-result .row:last-child { border-bottom: none; }
+        .exchange-result .label { opacity: 0.9; }
+        .exchange-result .value { font-weight: bold; font-size: 18px; }
+        .exchange-result .profit { color: #2ecc71; }
+        .exchange-result .cost { color: #e74c3c; }
+
+        /* 总金额 */
+        .total-amount {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .total-amount .amount {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .total-amount .breakdown {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* 隐藏按钮 */
+        .toggle-visibility {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 语言切换器 -->
+    <div class="lang-switcher">
+        <button class="lang-btn active" data-lang="zh" onclick="switchLanguage('zh')">中文</button>
+        <button class="lang-btn" data-lang="en" onclick="switchLanguage('en')">EN</button>
+    </div>
+
+    <div class="header">
+        <h1>💱 <span data-lang="zh">换汇资金流转管理系统</span><span data-lang="en" style="display:none">FundFlow - Transfer Management</span></h1>
+        <p><span data-lang="zh">客户 → 供应商 → 公司账号 → 货币兑换 → 客户目标账号</span><span data-lang="en" style="display:none">Customer → Supplier → Company Account → Exchange → Target Account</span></p>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="label"><span data-lang="zh">客户总数</span><span data-lang="en" style="display:none">Customers</span></div>
+            <div class="value" id="stat-customers">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label"><span data-lang="zh">供应商总数</span><span data-lang="en" style="display:none">Suppliers</span></div>
+            <div class="value" id="stat-suppliers">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label"><span data-lang="zh">公司账号</span><span data-lang="en" style="display:none">Company Accounts</span></div>
+            <div class="value" id="stat-company">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label"><span data-lang="zh">进行中的订单</span><span data-lang="en" style="display:none">Active Orders</span></div>
+            <div class="value" id="stat-orders">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label"><span data-lang="zh">本月交易额</span><span data-lang="en" style="display:none">Monthly Volume</span></div>
+            <div class="value" id="stat-volume">$0</div>
+        </div>
+    </div>
+
+    <!-- 标签页 -->
+    <div class="tabs">
+        <div class="tab active" data-tab="overview"><span data-lang="zh">📊 总览</span><span data-lang="en" style="display:none">📊 Overview</span></div>
+        <div class="tab" data-tab="entities"><span data-lang="zh">👥 实体管理</span><span data-lang="en" style="display:none">👥 Entities</span></div>
+        <div class="tab" data-tab="accounts"><span data-lang="zh">🏦 账号余额</span><span data-lang="en" style="display:none">🏦 Accounts</span></div>
+        <div class="tab" data-tab="exchange"><span data-lang="zh">💱 货币兑换</span><span data-lang="en" style="display:none">💱 Exchange</span></div>
+        <div class="tab" data-tab="rates"><span data-lang="zh">⚙️ 汇率设置</span><span data-lang="en" style="display:none">⚙️ Exchange Rates</span></div>
+        <div class="tab" data-tab="transactions"><span data-lang="zh">📜 交易记录</span><span data-lang="en" style="display:none">📜 Transactions</span></div>
+    </div>
+
+    <!-- 总览页面 -->
+    <div class="tab-content active" id="tab-overview">
+        <!-- 总金额展示 -->
+        <div class="total-amount" style="margin-bottom: 20px;">
+            <div class="label"><span data-lang="zh">总资产 (折算 AUD)</span><span data-lang="en" style="display:none">Total Assets (AUD)</span></div>
+            <div class="amount" id="total-assets">A$0.00</div>
+            <div class="breakdown">
+                <span><span data-lang="zh">客户:</span><span data-lang="en" style="display:none">Customers:</span> <span id="total-customers">A$0</span></span>
+                <span><span data-lang="zh">供应商:</span><span data-lang="en" style="display:none">Suppliers:</span> <span id="total-suppliers">A$0</span></span>
+                <span><span data-lang="zh">公司:</span><span data-lang="en" style="display:none">Company:</span> <span id="total-company">A$0</span></span>
+            </div>
+        </div>
+
+        <!-- 客户账户 -->
+        <div class="overview-section" id="section-customers">
+            <div class="overview-section-header">
+                <div class="overview-section-title">
+                    <button class="toggle-btn" onclick="toggleSection('customers')">▼</button>
+                    <span data-lang="zh">👥 客户账户</span><span data-lang="en" style="display:none">👥 Customer Accounts</span>
+                    <span class="entity-badge customer" id="count-customers-badge">0</span>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="openEntityModal('customer')">
+                    <span data-lang="zh">+ 添加客户</span><span data-lang="en" style="display:none">+ Add Customer</span>
+                </button>
+            </div>
+            <div class="table-container" id="table-customers">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><span data-lang="zh">名称</span><span data-lang="en" style="display:none">Name</span></th>
+                            <th><span data-lang="zh">货币</span><span data-lang="en" style="display:none">Currency</span></th>
+                            <th><span data-lang="zh">余额</span><span data-lang="en" style="display:none">Balance</span></th>
+                            <th><span data-lang="zh">操作</span><span data-lang="en" style="display:none">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="overview-customers"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 供应商账户 -->
+        <div class="overview-section" id="section-suppliers">
+            <div class="overview-section-header">
+                <div class="overview-section-title">
+                    <button class="toggle-btn" onclick="toggleSection('suppliers')">▼</button>
+                    <span data-lang="zh">📦 供应商账户</span><span data-lang="en" style="display:none">📦 Supplier Accounts</span>
+                    <span class="entity-badge supplier" id="count-suppliers-badge">0</span>
+                </div>
+                <button class="btn btn-sm btn-warning" onclick="openEntityModal('supplier')">
+                    <span data-lang="zh">+ 添加供应商</span><span data-lang="en" style="display:none">+ Add Supplier</span>
+                </button>
+            </div>
+            <div class="table-container" id="table-suppliers">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><span data-lang="zh">名称</span><span data-lang="en" style="display:none">Name</span></th>
+                            <th><span data-lang="zh">货币</span><span data-lang="en" style="display:none">Currency</span></th>
+                            <th><span data-lang="zh">余额</span><span data-lang="en" style="display:none">Balance</span></th>
+                            <th><span data-lang="zh">操作</span><span data-lang="en" style="display:none">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="overview-suppliers"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 公司账户 -->
+        <div class="overview-section" id="section-company">
+            <div class="overview-section-header">
+                <div class="overview-section-title">
+                    <button class="toggle-btn" onclick="toggleSection('company')">▼</button>
+                    <span data-lang="zh">🏢 公司账户</span><span data-lang="en" style="display:none">🏢 Company Accounts</span>
+                    <span class="entity-badge company" id="count-company-badge">0</span>
+                </div>
+                <button class="btn btn-sm btn-info" onclick="openEntityModal('company')">
+                    <span data-lang="zh">+ 添加公司账户</span><span data-lang="en" style="display:none">+ Add Company Account</span>
+                </button>
+            </div>
+            <div class="table-container" id="table-company">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><span data-lang="zh">名称</span><span data-lang="en" style="display:none">Name</span></th>
+                            <th><span data-lang="zh">货币</span><span data-lang="en" style="display:none">Currency</span></th>
+                            <th><span data-lang="zh">余额</span><span data-lang="en" style="display:none">Balance</span></th>
+                            <th><span data-lang="zh">操作</span><span data-lang="en" style="display:none">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="overview-company"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 实体管理 -->
+    <div class="tab-content" id="tab-entities">
+        <div class="form-card">
+            <h3><span data-lang="zh">➕ 添加实体</span><span data-lang="en" style="display:none">➕ Add Entity</span></h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label><span data-lang="zh">实体类型</span><span data-lang="en" style="display:none">Entity Type</span></label>
+                    <select id="entity-type">
+                        <option value="customer"><span data-lang="zh">客户</span><span data-lang="en" style="display:none">Customer</span></option>
+                        <option value="supplier"><span data-lang="zh">供应商</span><span data-lang="en" style="display:none">Supplier</span></option>
+                        <option value="company"><span data-lang="zh">公司账户</span><span data-lang="en" style="display:none">Company Account</span></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><span data-lang="zh">名称</span><span data-lang="en" style="display:none">Name</span></label>
+                    <input type="text" id="entity-name" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label><span data-lang="zh">货币</span><span data-lang="en" style="display:none">Currency</span></label>
+                    <select id="entity-currency">
+                        <option value="AUD">AUD</option>
+                        <option value="USD">USD</option>
+                        <option value="CNY">CNY</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="HKD">HKD</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><span data-lang="zh">初始余额</span><span data-lang="en" style="display:none">Initial Balance</span></label>
+                    <input type="number" id="entity-balance" value="0" step="0.01">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="addEntity()">
+                <span data-lang="zh">创建实体</span><span data-lang="en" style="display:none">Create Entity</span>
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><span data-lang="zh">ID</span><span data-lang="en" style="display:none">ID</span></th>
+                        <th><span data-lang="zh">名称</span><span data-lang="en" style="display:none">Name</span></th>
+                        <th><span data-lang="zh">类型</span><span data-lang="en" style="display:none">Type</span></th>
+                        <th><span data-lang="zh">货币</span><span data-lang="en" style="display:none">Currency</span></th>
+                        <th><span data-lang="zh">余额</span><span data-lang="en" style="display:none">Balance</span></th>
+                        <th><span data-lang="zh">操作</span><span data-lang="en" style="display:none">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody id="entities-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 账号余额 -->
+    <div class="tab-content" id="tab-accounts">
+        <div class="form-card">
+            <h3><span data-lang="zh">🏦 账户间转账</span><span data-lang="en" style="display:none">🏦 Transfer Between Accounts</span></h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label><span data-lang="zh">从账户</span><span data-lang="en" style="display:none">From Account</span></label>
+                    <select id="transfer-from"></select>
+                </div>
+                <div class="form-group">
+                    <label><span data-lang="zh">到账户</span><span data-lang="en" style="display:none">To Account</span></label>
+                    <select id="transfer-to"></select>
+                </div>
+                <div class="form-group">
+                    <label><span data-lang="zh">金额</span><span data-lang="en" style="display:none">Amount</span></label>
+                    <input type="number" id="transfer-amount" step="0.01" min="0.01">
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="transfer()">
+                <span data-lang="zh">确认转账</span><span data-lang="en" style="display:none">Confirm Transfer</span>
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><span data-lang="zh">名称</span><span data-lang="en" style="display:none">Name</span></th>
+                        <th><span data-lang="zh">类型</span><span data-lang="en" style="display:none">Type</span></th>
+                        <th><span data-lang="zh">货币</span><span data-lang="en" style="display:none">Currency</span></th>
+                        <th><span data-lang="zh">余额</span><span data-lang="en" style="display:none">Balance</span></th>
+                    </tr>
+                </thead>
+                <tbody id="accounts-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 货币兑换 -->
+    <div class="tab-content" id="tab-exchange">
+        <div class="two-columns">
+            <div class="form-card">
+                <h3><span data-lang="zh">💱 货币兑换</span><span data-lang="en" style="display:none">💱 Currency Exchange</span></h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span data-lang="zh">源账户</span><span data-lang="en" style="display:none">Source Account</span></label>
+                        <select id="exchange-from-account" onchange="updateExchangeBalance()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label><span data-lang="zh">源货币</span><span data-lang="en" style="display:none">From Currency</span></label>
+                        <select id="exchange-from-currency">
+                            <option value="AUD">AUD</option>
+                            <option value="USD">USD</option>
+                            <option value="CNY">CNY</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                            <option value="HKD">HKD</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span data-lang="zh">源金额</span><span data-lang="en" style="display:none">Amount</span></label>
+                        <input type="number" id="exchange-amount" step="0.01" min="0.01" oninput="calculateExchange()">
+                    </div>
+                    <div class="form-group">
+                        <label><span data-lang="zh">目标货币</span><span data-lang="en" style="display:none">To Currency</span></label>
+                        <select id="exchange-to-currency" onchange="calculateExchange()">
+                            <option value="AUD">AUD</option>
+                            <option value="USD">USD</option>
+                            <option value="CNY">CNY</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                            <option value="HKD">HKD</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span data-lang="zh">市场汇率</span><span data-lang="en" style="display:none">Market Rate</span></label>
+                        <input type="number" id="exchange-market-rate" step="0.0001" oninput="calculateExchange()">
+                    </div>
+                    <div class="form-group">
+                        <label><span data-lang="zh">我们的汇率</span><span data-lang="en" style="display:none">Our Rate</span></label>
+                        <input type="number" id="exchange-our-rate" step="0.0001" oninput="calculateExchange()">
+                    </div>
+                </div>
+
+                <div class="exchange-result" id="exchange-result">
+                    <div class="row">
+                        <span class="label"><span data-lang="zh">源金额</span><span data-lang="en" style="display:none">Source Amount</span></span>
+                        <span class="value" id="result-source">0 AUD</span>
+                    </div>
+                    <div class="row">
+                        <span class="label"><span data-lang="zh">目标金额</span><span data-lang="en" style="display:none">Target Amount</span></span>
+                        <span class="value" id="result-target">0 USD</span>
+                    </div>
+                    <div class="row">
+                        <span class="label"><span data-lang="zh">成本汇率</span><span data-lang="en" style="display:none">Cost Rate</span></span>
+                        <span class="value" id="result-cost">0</span>
+                    </div>
+                    <div class="row">
+                        <span class="label"><span data-lang="zh">我们的汇率</span><span data-lang="en" style="display:none">Our Rate</span></span>
+                        <span class="value" id="result-our">0</span>
+                    </div>
+                    <div class="row">
+                        <span class="label"><span data-lang="zh">利润/差价</span><span data-lang="en" style="display:none">Profit/Spread</span></span>
+                        <span class="value profit" id="result-profit">0</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-success" style="width: 100%; margin-top: 15px;" onclick="executeExchange()">
+                    <span data-lang="zh">执行兑换</span><span data-lang="en" style="display:none">Execute Exchange</span>
+                </button>
+            </div>
+
+            <div class="form-card">
+                <h3><span data-lang="zh">📊 兑换记录</span><span data-lang="en" style="display:none">📊 Exchange History</span></h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><span data-lang="zh">时间</span><span data-lang="en" style="display:none">Time</span></th>
+                                <th><span data-lang="zh">源</span><span data-lang="en" style="display:none">From</span></th>
+                                <th><span data-lang="zh">目标</span><span data-lang="en" style="display:none">To</span></th>
+                                <th><span data-lang="zh">利润</span><span data-lang="en" style="display:none">Profit</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="exchange-history"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 汇率设置 -->
+    <div class="tab-content" id="tab-rates">
+        <div class="form-card">
+            <h3><span data-lang="zh">⚙️ 设置基准汇率 (1 AUD = ?)</span><span data-lang="en" style="display:none">⚙️ Set Base Exchange Rate (1 AUD = ?)</span></h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>USD</label>
+                    <input type="number" id="rate-USD" step="0.0001" onchange="saveRates()">
+                </div>
+                <div class="form-group">
+                    <label>CNY</label>
+                    <input type="number" id="rate-CNY" step="0.0001" onchange="saveRates()">
+                </div>
+                <div class="form-group">
+                    <label>EUR</label>
+                    <input type="number" id="rate-EUR" step="0.0001" onchange="saveRates()">
+                </div>
+                <div class="form-group">
+                    <label>GBP</label>
+                    <input type="number" id="rate-GBP" step="0.0001" onchange="saveRates()">
+                </div>
+                <div class="form-group">
+                    <label>HKD</label>
+                    <input type="number" id="rate-HKD" step="0.0001" onchange="saveRates()">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><span data-lang="zh">货币</span><span data-lang="en" style="display:none">Currency</span></th>
+                        <th><span data-lang="zh">汇率 (1 AUD = ?)</span><span data-lang="en" style="display:none">Rate (1 AUD = ?)</span></th>
+                    </tr>
+                </thead>
+                <tbody id="rates-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 交易记录 -->
+    <div class="tab-content" id="tab-transactions">
+        <div class="form-card" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; border: none; padding: 0;"><span data-lang="zh">📜 所有交易记录</span><span data-lang="en" style="display:none">📜 All Transactions</span></h3>
+            <button class="btn btn-success" onclick="exportCSV()">
+                <span data-lang="zh">📥 导出 CSV</span><span data-lang="en" style="display:none">📥 Export CSV</span>
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><span data-lang="zh">时间</span><span data-lang="en" style="display:none">Time</span></th>
+                        <th><span data-lang="zh">类型</span><span data-lang="en" style="display:none">Type</span></th>
+                        <th><span data-lang="zh">从账户</span><span data-lang="en" style="display:none">From</span></th>
+                        <th><span data-lang="zh">到账户</span><span data-lang="en" style="display:none">To</span></th>
+                        <th><span data-lang="zh">金额</span><span data-lang="en" style="display:none">Amount</span></th>
+                        <th><span data-lang="zh">备注</span><span data-lang="en" style="display:none">Note</span></th>
+                    </tr>
+                </thead>
+                <tbody id="transactions-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div id="message" class="message" style="display: none;"></div>
+
+    <!-- 实体模态框 -->
+    <div id="modal-entity" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><span data-lang="zh">添加新账户</span><span data-lang="en" style="display:none">Add New Account</span></h3>
+                <button class="modal-close" onclick="closeModal('entity')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label><span data-lang="zh">账户类型</span><span data-lang="en" style="display:none">Account Type</span></label>
+                    <select id="modal-entity-type">
+                        <option value="customer"><span data-lang="zh">客户</span><span data-lang="en" style="display:none">Customer</span></option>
+                        <option value="supplier"><span data-lang="zh">供应商</span><span data-lang="en" style="display:none">Supplier</span></option>
+                        <option value="company"><span data-lang="zh">公司</span><span data-lang="en" style="display:none">Company</span></option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label><span data-lang="zh">名称</span><span data-lang="en" style="display:none">Name</span></label>
+                    <input type="text" id="modal-entity-name" placeholder="">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label><span data-lang="zh">货币</span><span data-lang="en" style="display:none">Currency</span></label>
+                    <select id="modal-entity-currency">
+                        <option value="AUD">AUD</option>
+                        <option value="USD">USD</option>
+                        <option value="CNY">CNY</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="HKD">HKD</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" style="width: 100%;" onclick="addEntityFromModal()">
+                    <span data-lang="zh">创建</span><span data-lang="en" style="display:none">Create</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 数据存储
+        const STORAGE_KEYS = {
+            ENTITIES: 'fundflow_entities',
+            TRANSACTIONS: 'fundflow_transactions',
+            EXCHANGES: 'fundflow_exchanges',
+            RATES: 'fundflow_rates',
+            SECTIONS: 'fundflow_sections'
+        };
+
+        // 状态
+        let entities = [];
+        let transactions = [];
+        let exchanges = [];
+        let rates = {};
+        let sectionVisibility = {};
+        let currentLang = 'zh';
+
+        // 货币符号
+        const CURRENCY_SYMBOLS = {
+            AUD: 'A$', USD: '$', CNY: '¥', EUR: '€', GBP: '£', HKD: 'HK$'
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            initSampleData();
+            renderAll();
+            initTabs();
+        });
+
+        // 加载/保存数据
+        function loadData() {
+            entities = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENTITIES)) || [];
+            transactions = JSON.parse(localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)) || [];
+            exchanges = JSON.parse(localStorage.getItem(STORAGE_KEYS.EXCHANGES)) || [];
+            rates = JSON.parse(localStorage.getItem(STORAGE_KEYS.RATES)) || { USD: 0.65, CNY: 4.5, EUR: 0.6, GBP: 0.52, HKD: 5.1 };
+            sectionVisibility = JSON.parse(localStorage.getItem(STORAGE_KEYS.SECTIONS)) || { customers: true, suppliers: true, company: true };
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEYS.ENTITIES, JSON.stringify(entities));
+            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+            localStorage.setItem(STORAGE_KEYS.EXCHANGES, JSON.stringify(exchanges));
+            localStorage.setItem(STORAGE_KEYS.RATES, JSON.stringify(rates));
+            localStorage.setItem(STORAGE_KEYS.SECTIONS, JSON.stringify(sectionVisibility));
+        }
+
+        // 示例数据
+        function initSampleData() {
+            if (entities.length === 0) {
+                entities = [
+                    { id: 'E001', name: '客户 - 张三', type: 'customer', currency: 'AUD', balance: 10000 },
+                    { id: 'E002', name: '客户 - 李四', type: 'customer', currency: 'USD', balance: 25000 },
+                    { id: 'E003', name: '供应商 - Bob', type: 'supplier', currency: 'AUD', balance: 5000 },
+                    { id: 'E004', name: '公司主账户', type: 'company', currency: 'AUD', balance: 50000 },
+                    { id: 'E005', name: '公司 USD 账户', type: 'company', currency: 'USD', balance: 30000 },
+                ];
+                saveData();
+            }
+        }
+
+        // 语言切换
+        function switchLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                el.style.display = el.dataset.lang === lang ? 'inline' : 'none';
+            });
+        }
+
+        // 标签页切换
+        function initTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+                });
+            });
+        }
+
+        // 渲染所有
+        function renderAll() {
+            renderStats();
+            renderOverview();
+            renderEntities();
+            renderAccounts();
+            renderRates();
+            renderTransactions();
+            renderExchanges();
+            renderTransferSelects();
+            renderExchangeSelects();
+        }
+
+        // 渲染统计
+        function renderStats() {
+            const customers = entities.filter(e => e.type === 'customer');
+            const suppliers = entities.filter(e => e.type === 'supplier');
+            const companies = entities.filter(e => e.type === 'company');
+
+            document.getElementById('stat-customers').textContent = customers.length;
+            document.getElementById('stat-suppliers').textContent = suppliers.length;
+            document.getElementById('stat-company').textContent = companies.length;
+            document.getElementById('stat-orders').textContent = transactions.filter(t => t.status === 'pending').length;
+
+            const monthlyVolume = transactions
+                .filter(t => new Date(t.time).getMonth() === new Date().getMonth())
+                .reduce((sum, t) => sum + t.amount, 0);
+            document.getElementById('stat-volume').textContent = '$' + monthlyVolume.toFixed(2);
+        }
+
+        // 渲染总览
+        function renderOverview() {
+            // 计算总资产
+            let totalAssets = 0;
+            let totalCustomers = 0;
+            let totalSuppliers = 0;
+            let totalCompany = 0;
+
+            entities.forEach(e => {
+                const valueInAUD = e.currency === 'AUD' ? e.balance : e.balance / (rates[e.currency] || 1);
+                totalAssets += valueInAUD;
+                if (e.type === 'customer') totalCustomers += valueInAUD;
+                if (e.type === 'supplier') totalSuppliers += valueInAUD;
+                if (e.type === 'company') totalCompany += valueInAUD;
+            });
+
+            document.getElementById('total-assets').textContent = 'A$' + totalAssets.toFixed(2);
+            document.getElementById('total-customers').textContent = 'A$' + totalCustomers.toFixed(2);
+            document.getElementById('total-suppliers').textContent = 'A$' + totalSuppliers.toFixed(2);
+            document.getElementById('total-company').textContent = 'A$' + totalCompany.toFixed(2);
+
+            // 渲染各类型账户
+            ['customers', 'suppliers', 'company'].forEach(type => {
+                const filtered = entities.filter(e => e.type === (type === 'company' ? 'company' : type === 'customers' ? 'customer' : 'supplier'));
+                const tbody = document.getElementById('overview-' + type);
+                const badge = document.getElementById('count-' + type + '-badge');
+                const toggleBtn = document.querySelector(`#section-${type} .toggle-btn`);
+                const table = document.getElementById('table-' + type);
+
+                badge.textContent = filtered.length;
+                toggleBtn.textContent = sectionVisibility[type] ? '▼' : '▶';
+                table.style.display = sectionVisibility[type] ? 'block' : 'none';
+
+                tbody.innerHTML = filtered.map(e => `
+                    <tr>
+                        <td><strong>${e.name}</strong><br><small style="color:#7f8c8d">${e.id}</small></td>
+                        <td><span class="currency-badge ${e.currency}">${e.currency}</span></td>
+                        <td><strong>${CURRENCY_SYMBOLS[e.currency]}${e.balance.toFixed(2)}</strong></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-success" onclick="openDepositModal('${e.id}')"><span data-lang="zh">存款</span><span data-lang="en" style="display:none">Deposit</span></button>
+                                <button class="btn btn-sm btn-danger" onclick="openWithdrawModal('${e.id}')"><span data-lang="zh">取款</span><span data-lang="en" style="display:none">Withdraw</span></button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('') || `<tr><td colspan="4" class="empty-state"><span data-lang="zh">暂无账户</span><span data-lang="en" style="display:none">No accounts</span></td></tr>`;
+            });
+        }
+
+        // 切换区块显示
+        function toggleSection(section) {
+            sectionVisibility[section] = !sectionVisibility[section];
+            saveData();
+            renderOverview();
+        }
+
+        // 渲染实体列表
+        function renderEntities() {
+            const tbody = document.getElementById('entities-table');
+            tbody.innerHTML = entities.map(e => `
+                <tr>
+                    <td><small style="color:#7f8c8d">${e.id}</small></td>
+                    <td><strong>${e.name}</strong></td>
+                    <td><span class="entity-badge ${e.type}">${getTypeName(e.type)}</span></td>
+                    <td><span class="currency-badge ${e.currency}">${e.currency}</span></td>
+                    <td><strong>${CURRENCY_SYMBOLS[e.currency]}${e.balance.toFixed(2)}</strong></td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteEntity('${e.id}')">
+                            <span data-lang="zh">删除</span><span data-lang="en" style="display:none">Delete</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 渲染账号列表
+        function renderAccounts() {
+            const tbody = document.getElementById('accounts-table');
+            tbody.innerHTML = entities.map(e => `
+                <tr>
+                    <td><strong>${e.name}</strong></td>
+                    <td><span class="entity-badge ${e.type}">${getTypeName(e.type)}</span></td>
+                    <td><span class="currency-badge ${e.currency}">${e.currency}</span></td>
+                    <td><strong style="color: ${e.balance >= 0 ? '#27ae60' : '#e74c3c'}">${CURRENCY_SYMBOLS[e.currency]}${e.balance.toFixed(2)}</strong></td>
+                </tr>
+            `).join('');
+        }
+
+        // 渲染汇率
+        function renderRates() {
+            Object.keys(rates).forEach(currency => {
+                const input = document.getElementById('rate-' + currency);
+                if (input) input.value = rates[currency];
+            });
+
+            const tbody = document.getElementById('rates-table');
+            tbody.innerHTML = Object.entries(rates).map(([currency, rate]) => `
+                <tr>
+                    <td><span class="currency-badge ${currency}">${currency}</span></td>
+                    <td><strong>1 AUD = ${rate} ${currency}</strong></td>
+                </tr>
+            `).join('');
+        }
+
+        // 保存汇率
+        function saveRates() {
+            Object.keys(rates).forEach(currency => {
+                const input = document.getElementById('rate-' + currency);
+                if (input) rates[currency] = parseFloat(input.value) || 0;
+            });
+            saveData();
+            renderRates();
+            showMessage(currentLang === 'zh' ? '汇率已保存' : 'Rates saved', 'success');
+        }
+
+        // 渲染交易记录
+        function renderTransactions() {
+            const tbody = document.getElementById('transactions-table');
+            const sortedTx = [...transactions].sort((a, b) => new Date(b.time) - new Date(a.time));
+            tbody.innerHTML = sortedTx.map(t => {
+                const fromEntity = entities.find(e => e.id === t.fromId);
+                const toEntity = entities.find(e => e.id === t.toId);
+                return `
+                    <tr>
+                        <td><small>${new Date(t.time).toLocaleString()}</small></td>
+                        <td><span class="status ${t.type}">${getTypeName(t.type)}</span></td>
+                        <td>${fromEntity ? fromEntity.name : '-'}</td>
+                        <td>${toEntity ? toEntity.name : '-'}</td>
+                        <td><strong>${t.currency} ${t.amount.toFixed(2)}</strong></td>
+                        <td>${t.note || '-'}</td>
+                    </tr>
+                `;
+            }).join('') || `<tr><td colspan="6" class="empty-state"><span data-lang="zh">暂无交易记录</span><span data-lang="en" style="display:none">No transactions</span></td></tr>`;
+        }
+
+        // 渲染兑换历史
+        function renderExchanges() {
+            const tbody = document.getElementById('exchange-history');
+            tbody.innerHTML = exchanges.map(e => `
+                <tr>
+                    <td><small>${new Date(e.time).toLocaleString()}</small></td>
+                    <td>${e.fromAmount.toFixed(2)} ${e.fromCurrency}</td>
+                    <td>${e.toAmount.toFixed(2)} ${e.toCurrency}</td>
+                    <td style="color: #27ae60"><strong>+${e.profit.toFixed(2)} ${e.fromCurrency}</strong></td>
+                </tr>
+            `).join('') || `<tr><td colspan="4" class="empty-state"><span data-lang="zh">暂无兑换记录</span><span data-lang="en" style="display:none">No exchange history</span></td></tr>`;
+        }
+
+        // 渲染转账下拉框
+        function renderTransferSelects() {
+            const options = entities.map(e => `<option value="${e.id}">${e.name} (${CURRENCY_SYMBOLS[e.currency]}${e.balance.toFixed(2)})</option>`).join('');
+            document.getElementById('transfer-from').innerHTML = '<option value="">--</option>' + options;
+            document.getElementById('transfer-to').innerHTML = '<option value="">--</option>' + options;
+        }
+
+        // 渲染兑换下拉框
+        function renderExchangeSelects() {
+            const options = entities.map(e => `<option value="${e.id}">${e.name} (${e.currency}: ${e.balance.toFixed(2)})</option>`).join('');
+            document.getElementById('exchange-from-account').innerHTML = '<option value="">--</option>' + options;
+        }
+
+        // 更新兑换余额
+        function updateExchangeBalance() {
+            const entityId = document.getElementById('exchange-from-account').value;
+            const entity = entities.find(e => e.id === entityId);
+            if (entity) {
+                document.getElementById('exchange-from-currency').value = entity.currency;
+            }
+        }
+
+        // 计算兑换
+        function calculateExchange() {
+            const amount = parseFloat(document.getElementById('exchange-amount').value) || 0;
+            const fromCurrency = document.getElementById('exchange-from-currency').value;
+            const toCurrency = document.getElementById('exchange-to-currency').value;
+            const marketRate = parseFloat(document.getElementById('exchange-market-rate').value) || 1;
+            const ourRate = parseFloat(document.getElementById('exchange-our-rate').value) || marketRate;
+
+            // 计算目标金额 (使用我们的汇率)
+            const targetAmount = amount * ourRate;
+
+            // 计算成本 (按市场汇率计算)
+            const costAmount = amount * marketRate;
+
+            // 计算利润
+            const profit = targetAmount - costAmount;
+
+            document.getElementById('result-source').textContent = `${amount.toFixed(2)} ${fromCurrency}`;
+            document.getElementById('result-target').textContent = `${targetAmount.toFixed(2)} ${toCurrency}`;
+            document.getElementById('result-cost').textContent = `1 ${fromCurrency} = ${marketRate.toFixed(4)} ${toCurrency}`;
+            document.getElementById('result-our').textContent = `1 ${fromCurrency} = ${ourRate.toFixed(4)} ${toCurrency}`;
+            document.getElementById('result-profit').textContent = `${profit >= 0 ? '+' : ''}${profit.toFixed(2)} ${toCurrency}`;
+            document.getElementById('result-profit').className = `value ${profit >= 0 ? 'profit' : 'cost'}`;
+        }
+
+        // 执行转账
+        function transfer() {
+            const fromId = document.getElementById('transfer-from').value;
+            const toId = document.getElementById('transfer-to').value;
+            const amount = parseFloat(document.getElementById('transfer-amount').value);
+
+            if (!fromId || !toId || !amount) {
+                showMessage(currentLang === 'zh' ? '请填写所有字段' : 'Please fill all fields', 'error');
+                return;
+            }
+
+            const fromEntity = entities.find(e => e.id === fromId);
+            const toEntity = entities.find(e => e.id === toId);
+
+            if (!fromEntity || !toEntity) {
+                showMessage(currentLang === 'zh' ? '账户不存在' : 'Account not found', 'error');
+                return;
+            }
+
+            if (fromEntity.currency !== toEntity.currency) {
+                showMessage(currentLang === 'zh' ? '目前只支持同币种转账' : 'Only same currency transfer supported', 'error');
+                return;
+            }
+
+            if (fromEntity.balance < amount) {
+                showMessage(currentLang === 'zh' ? '余额不足' : 'Insufficient balance', 'error');
+                return;
+            }
+
+            fromEntity.balance -= amount;
+            toEntity.balance += amount;
+
+            transactions.push({
+                id: 'TX' + Date.now(),
+                type: 'transfer',
+                fromId,
+                toId,
+                amount,
+                currency: fromEntity.currency,
+                time: new Date().toISOString(),
+                note: ''
+            });
+
+            saveData();
+            renderAll();
+            showMessage(currentLang === 'zh' ? '转账成功' : 'Transfer successful', 'success');
+        }
+
+        // 执行兑换
+        function executeExchange() {
+            const entityId = document.getElementById('exchange-from-account').value;
+            const amount = parseFloat(document.getElementById('exchange-amount').value);
+            const fromCurrency = document.getElementById('exchange-from-currency').value;
+            const toCurrency = document.getElementById('exchange-to-currency').value;
+            const ourRate = parseFloat(document.getElementById('exchange-our-rate').value);
+            const marketRate = parseFloat(document.getElementById('exchange-market-rate').value);
+
+            if (!entityId || !amount || !ourRate) {
+                showMessage(currentLang === 'zh' ? '请填写所有字段' : 'Please fill all fields', 'error');
+                return;
+            }
+
+            const entity = entities.find(e => e.id === entityId);
+            if (!entity) {
+                showMessage(currentLang === 'zh' ? '账户不存在' : 'Account not found', 'error');
+                return;
+            }
+
+            if (entity.balance < amount) {
+                showMessage(currentLang === 'zh' ? '余额不足' : 'Insufficient balance', 'error');
+                return;
+            }
+
+            const targetAmount = amount * ourRate;
+            const costAmount = amount * marketRate;
+            const profit = targetAmount - costAmount;
+
+            // 扣减源账户
+            entity.balance -= amount;
+
+            // 找到或创建目标货币账户
+            let targetEntity = entities.find(e => e.type === 'company' && e.currency === toCurrency);
+            if (!targetEntity) {
+                targetEntity = {
+                    id: 'E' + Date.now(),
+                    name: `公司 ${toCurrency} 账户`,
+                    type: 'company',
+                    currency: toCurrency,
+                    balance: 0
+                };
+                entities.push(targetEntity);
+            }
+            targetEntity.balance += targetAmount;
+
+            // 记录交易
+            transactions.push({
+                id: 'TX' + Date.now(),
+                type: 'exchange',
+                fromId: entityId,
+                toId: targetEntity.id,
+                amount,
+                currency: fromCurrency,
+                targetAmount,
+                targetCurrency: toCurrency,
+                rate: ourRate,
+                time: new Date().toISOString(),
+                note: `兑换 ${amount} ${fromCurrency} -> ${targetAmount} ${toCurrency}`
+            });
+
+            // 记录兑换
+            exchanges.push({
+                fromAmount: amount,
+                fromCurrency,
+                toAmount: targetAmount,
+                toCurrency,
+                marketRate,
+                ourRate,
+                profit,
+                time: new Date().toISOString()
+            });
+
+            saveData();
+            renderAll();
+            showMessage(currentLang === 'zh' ? '兑换成功' : 'Exchange successful', 'success');
+        }
+
+        // 添加实体
+        function addEntity() {
+            const type = document.getElementById('entity-type').value;
+            const name = document.getElementById('entity-name').value.trim();
+            const currency = document.getElementById('entity-currency').value;
+            const balance = parseFloat(document.getElementById('entity-balance').value) || 0;
+
+            if (!name) {
+                showMessage(currentLang === 'zh' ? '请输入名称' : 'Please enter name', 'error');
+                return;
+            }
+
+            const entity = {
+                id: 'E' + Date.now(),
+                name,
+                type,
+                currency,
+                balance
+            };
+
+            entities.push(entity);
+            saveData();
+            renderAll();
+            showMessage(currentLang === 'zh' ? '创建成功' : 'Created successfully', 'success');
+
+            // 清空表单
+            document.getElementById('entity-name').value = '';
+            document.getElementById('entity-balance').value = '0';
+        }
+
+        // 删除实体
+        function deleteEntity(id) {
+            const entity = entities.find(e => e.id === id);
+            if (!entity) return;
+
+            if (entity.balance !== 0) {
+                showMessage(currentLang === 'zh' ? '余额不为0，无法删除' : 'Cannot delete account with non-zero balance', 'error');
+                return;
+            }
+
+            if (!confirm(currentLang === 'zh' ? '确定删除吗？' : 'Are you sure?')) return;
+
+            entities = entities.filter(e => e.id !== id);
+            saveData();
+            renderAll();
+            showMessage(currentLang === 'zh' ? '已删除' : 'Deleted', 'success');
+        }
+
+        // 存款
+        function openDepositModal(id) {
+            const amount = prompt(currentLang === 'zh' ? '输入存款金额:' : 'Enter deposit amount:');
+            if (!amount) return;
+
+            const entity = entities.find(e => e.id === id);
+            if (!entity) return;
+
+            entity.balance += parseFloat(amount);
+
+            transactions.push({
+                id: 'TX' + Date.now(),
+                type: 'deposit',
+                fromId: id,
+                toId: id,
+                amount: parseFloat(amount),
+                currency: entity.currency,
+                time: new Date().toISOString(),
+                note: currentLang === 'zh' ? '存款' : 'Deposit'
+            });
+
+            saveData();
+            renderAll();
+            showMessage(currentLang === 'zh' ? '存款成功' : 'Deposit successful', 'success');
+        }
+
+        // 取款
+        function openWithdrawModal(id) {
+            const amount = prompt(currentLang === 'zh' ? '输入取款金额:' : 'Enter withdrawal amount:');
+            if (!amount) return;
+
+            const entity = entities.find(e => e.id === id);
+            if (!entity) return;
+
+            if (entity.balance < parseFloat(amount)) {
+                showMessage(currentLang === 'zh' ? '余额不足' : 'Insufficient balance', 'error');
+                return;
+            }
+
+            entity.balance -= parseFloat(amount);
+
+            transactions.push({
+                id: 'TX' + Date.now(),
+                type: 'withdraw',
+                fromId: id,
+                toId: id,
+                amount: parseFloat(amount),
+                currency: entity.currency,
+                time: new Date().toISOString(),
+                note: currentLang === 'zh' ? '取款' : 'Withdrawal'
+            });
+
+            saveData();
+            renderAll();
+            showMessage(currentLang === 'zh' ? '取款成功' : 'Withdrawal successful', 'success');
+        }
+
+        // 打开实体模态框
+        function openEntityModal(type) {
+            document.getElementById('modal-entity-type').value = type;
+            document.getElementById('modal-entity').classList.add('active');
+        }
+
+        // 从模态框添加实体
+        function addEntityFromModal() {
+            const type = document.getElementById('modal-entity-type').value;
+            const name = document.getElementById('modal-entity-name').value.trim();
+            const currency = document.getElementById('modal-entity-currency').value;
+
+            if (!name) {
+                showMessage(currentLang === 'zh' ? '请输入名称' : 'Please enter name', 'error');
+                return;
+            }
+
+            entities.push({
+                id: 'E' + Date.now(),
+                name,
+                type,
+                currency,
+                balance: 0
+            });
+
+            saveData();
+            closeModal('entity');
+            renderAll();
+            showMessage(currentLang === 'zh' ? '创建成功' : 'Created successfully', 'success');
+            document.getElementById('modal-entity-name').value = '';
+        }
+
+        // 关闭模态框
+        function closeModal(name) {
+            document.getElementById('modal-' + name).classList.remove('active');
+        }
+
+        // 获取类型名称
+        function getTypeName(type) {
+            const names = {
+                customer: currentLang === 'zh' ? '客户' : 'Customer',
+                supplier: currentLang === 'zh' ? '供应商' : 'Supplier',
+                company: currentLang === 'zh' ? '公司' : 'Company',
+                transfer: currentLang === 'zh' ? '转账' : 'Transfer',
+                exchange: currentLang === 'zh' ? '兑换' : 'Exchange',
+                deposit: currentLang === 'zh' ? '存款' : 'Deposit',
+                withdraw: currentLang === 'zh' ? '取款' : 'Withdrawal'
+            };
+            return names[type] || type;
+        }
+
+        // 显示消息
+        function showMessage(text, type = 'info') {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 3000);
+        }
+
+        // 导出CSV
+        function exportCSV() {
+            const headers = ['Time', 'Type', 'From', 'To', 'Amount', 'Currency', 'Note'];
+            const rows = transactions.map(t => {
+                const fromEntity = entities.find(e => e.id === t.fromId);
+                const toEntity = entities.find(e => e.id === t.toId);
+                return [
+                    new Date(t.time).toLocaleString(),
+                    t.type,
+                    fromEntity ? fromEntity.name : '-',
+                    toEntity ? toEntity.name : '-',
+                    t.amount,
+                    t.currency,
+                    t.note || ''
+                ];
+            });
+
+            let csv = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+
+            showMessage(currentLang === 'zh' ? 'CSV 已导出' : 'CSV exported', 'success');
+        }
+    </script>
+
+<style>
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.inland-security-footer {
+  position: fixed;
+  z-index: 10;
+  bottom: 0;
+  right: 0;
+  width: fit-content;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.trigger-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minimax-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 300;
+  color: #adadad;
+  text-decoration: none;
+}
+
+.minimax-link:visited {
+  color: #adadad;
+}
+
+.minimax-link:hover {
+  color: #666666;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  padding-bottom: 16px; /* 8px 内容间距 + 8px 用于鼠标移动的透明区域 */
+  font-size: 12px;
+  line-height: 17px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #171717;
+}
+
+/* 创建透明的连接区域，让鼠标可以平滑移动到 tooltip */
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.tooltip-container:hover .tooltip-content {
+  display: flex;
+}
+
+.info-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.beian-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #171717;
+}
+
+.beian-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.underline-text {
+  color: #171717;
+  text-decoration: underline;
+}
+
+.underline-text:hover {
+  color: #000000;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .trigger-content {
+    background-color: transparent;
+  }
+
+  .minimax-link,
+  .minimax-link:visited {
+    color: #666666;
+  }
+
+  .minimax-link:hover {
+    color: #adadad;
+  }
+
+  .tooltip-content {
+    background-color: #262626;
+    color: #ededed;
+  }
+
+  .beian-link,
+  .underline-text {
+    color: #ededed;
+  }
+
+  .underline-text:hover {
+    color: #ffffff;
+  }
+}
+
+</style>
+<div class="inland-security-footer">
+  <div class="tooltip-container">
+    <div class="trigger-content">
+      <a href="https://www.minimaxi.com/" target="_blank" rel="noreferrer" class="minimax-link">
+        <span>© 2026 MiniMax</span>
+      </a>
+    </div>
+    <div class="tooltip-content">
+      <section class="info-section">
+        <span>上海稀宇科技有限公司</span>
+      </section>
+
+      <section class="info-section">
+        <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
+          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <span class="underline-text">沪公网安备31010402010179号</span>
+        </a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">
+          沪ICP备2023003282号-38
+        </a>
+      </section>
+
+      <section class="info-section">
+        <span>模型名称：MiniMax</span>
+        <span>备案号：Shanghai-MiniMax-202505230046</span>
+      </section>
+
+      <section class="info-section">
+        <a href="https://agent.minimaxi.com/doc/zh/terms-of-service.html" target="_blank" rel="noreferrer" class="underline-text">
+          用户协议
+        </a>
+        <a href="https://agent.minimaxi.com/doc/zh/privacy-policy.html" target="_blank" rel="noreferrer" class="underline-text">
+          隐私政策
+        </a>
+      </section>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
+</script>
+</body>
+</html>
