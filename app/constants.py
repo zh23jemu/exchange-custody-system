@@ -1,0 +1,35 @@
+from decimal import Decimal
+
+CURRENCIES = ("AUD", "USD", "CNY", "EUR")
+
+ORDER_TYPE_CASH = "现金订单"
+ORDER_TYPE_BANK = "转账订单"
+
+ORDER_STATUS_PENDING = "待处理"
+ORDER_STATUS_WITH_SUPPLIER = "交中转商"
+ORDER_STATUS_IN_COMPANY = "在公司账号"
+ORDER_STATUS_COMPLETED = "已完成"
+
+CASH_ORDER_FLOW = (
+    ORDER_STATUS_PENDING,
+    ORDER_STATUS_WITH_SUPPLIER,
+    ORDER_STATUS_IN_COMPANY,
+    ORDER_STATUS_COMPLETED,
+)
+
+BANK_ORDER_FLOW = (
+    ORDER_STATUS_IN_COMPANY,
+    ORDER_STATUS_COMPLETED,
+)
+
+DEFAULT_RATE_BASE = {
+    "AUD": Decimal("1"),
+    "USD": Decimal("0.65"),
+    "CNY": Decimal("4.70"),
+    "EUR": Decimal("0.60"),
+}
+
+LEDGER_KIND_ORDER_INFLOW = "order_inflow"
+LEDGER_KIND_ORDER_PAYOUT = "order_payout"
+LEDGER_KIND_EXCHANGE_OUT = "exchange_out"
+LEDGER_KIND_EXCHANGE_IN = "exchange_in"

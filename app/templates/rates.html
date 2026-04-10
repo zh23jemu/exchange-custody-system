@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}汇率设置 - 换汇资金托管系统{% endblock %}
+{% block content %}
+<section class="card">
+    <h2>AUD 基准汇率</h2>
+    <p class="muted">规则：1 AUD = ? 目标币种。AUD 固定为 1。</p>
+    <div class="table-shell">
+        <table>
+            <thead><tr><th>币种</th><th>当前汇率</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for item in rates %}
+                <tr>
+                    <td>{{ item.currency }}</td>
+                    <td>{{ item.rate_to_aud_base }}</td>
+                    <td>
+                        <form method="post" action="/settings/rates" class="inline-form">
+                            <input type="hidden" name="currency" value="{{ item.currency }}">
+                            <input name="rate_to_aud_base" type="number" min="0.000001" step="0.000001" value="{{ item.rate_to_aud_base }}" {% if item.currency == "AUD" %}readonly{% endif %}>
+                            <button class="button button-small" type="submit">保存</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}实体管理 - 换汇资金托管系统{% endblock %}
+{% block content %}
+<div class="two-col">
+    <section class="card">
+        <h2>新增客户</h2>
+        <form method="post" action="/customers" class="form-grid">
+            <label>姓名<input name="name" required></label>
+            <label>联系方式<input name="contact"></label>
+            <button class="button" type="submit">添加客户</button>
+        </form>
+    </section>
+    <section class="card">
+        <h2>新增中转商</h2>
+        <form method="post" action="/suppliers" class="form-grid">
+            <label>名称<input name="name" required></label>
+            <label>联系方式<input name="contact"></label>
+            <button class="button" type="submit">添加中转商</button>
+        </form>
+    </section>
+</div>
+
+<div class="two-col">
+    <section class="card">
+        <h2>新增公司账号</h2>
+        <form method="post" action="/company-accounts" class="form-grid">
+            <label>账号名称<input name="name" required></label>
+            <label>银行<input name="bank_name" required></label>
+            <label>账号<input name="account_no" required></label>
+            <label>主货币
+                <select name="primary_currency" required>
+                    {% for currency in currencies %}<option value="{{ currency }}">{{ currency }}</option>{% endfor %}
+                </select>
+            </label>
+            <button class="button" type="submit">添加公司账号</button>
+        </form>
+    </section>
+    <section class="card">
+        <h2>新增客户目标账号</h2>
+        <form method="post" action="/customer-target-accounts" class="form-grid">
+            <label>所属客户
+                <select name="customer_id" required>
+                    {% for customer in customers %}<option value="{{ customer.id }}">{{ customer.name }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>账号名称<input name="account_name" required></label>
+            <label>银行<input name="bank_name" required></label>
+            <label>账号<input name="account_no" required></label>
+            <label>币种
+                <select name="currency" required>
+                    {% for currency in currencies %}<option value="{{ currency }}">{{ currency }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>持有人<input name="holder_name" required></label>
+            <button class="button" type="submit">添加目标账号</button>
+        </form>
+    </section>
+</div>
+
+<section class="card">
+    <h2>客户列表</h2>
+    <div class="table-shell">
+        <table>
+            <thead><tr><th>姓名</th><th>联系方式</th><th>流水</th></tr></thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr><td>{{ customer.name }}</td><td>{{ customer.contact }}</td><td><a class="text-link" href="/customers/{{ customer.id }}/ledger">查看流水</a></td></tr>
+                {% else %}
+                <tr><td colspan="3" class="empty">暂无客户</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="two-col">
+    <section class="card">
+        <h2>中转商列表</h2>
+        <div class="table-shell">
+            <table>
+                <thead><tr><th>名称</th><th>联系方式</th></tr></thead>
+                <tbody>
+                    {% for supplier in suppliers %}
+                    <tr><td>{{ supplier.name }}</td><td>{{ supplier.contact }}</td></tr>
+                    {% else %}
+                    <tr><td colspan="2" class="empty">暂无中转商</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="card">
+        <h2>公司账号列表</h2>
+        <div class="table-shell">
+            <table>
+                <thead><tr><th>名称</th><th>银行</th><th>账号</th><th>主货币</th></tr></thead>
+                <tbody>
+                    {% for account in company_accounts %}
+                    <tr><td>{{ account.name }}</td><td>{{ account.bank_name }}</td><td>{{ account.account_no }}</td><td>{{ account.primary_currency }}</td></tr>
+                    {% else %}
+                    <tr><td colspan="4" class="empty">暂无公司账号</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<section class="card">
+    <h2>客户目标账号列表</h2>
+    <div class="table-shell">
+        <table>
+            <thead><tr><th>客户</th><th>名称</th><th>银行</th><th>账号</th><th>币种</th><th>持有人</th></tr></thead>
+            <tbody>
+                {% for item in target_accounts %}
+                <tr><td>{{ item.customer.name }}</td><td>{{ item.account_name }}</td><td>{{ item.bank_name }}</td><td>{{ item.account_no }}</td><td>{{ item.currency }}</td><td>{{ item.holder_name }}</td></tr>
+                {% else %}
+                <tr><td colspan="6" class="empty">暂无目标账号</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

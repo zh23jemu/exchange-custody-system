@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}换汇资金托管系统{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="wrap">
+            <div>
+                <h1>换汇资金托管系统</h1>
+                <p>资金托管、订单流转、兑换和客户流水的一体化管理</p>
+            </div>
+            <nav class="nav">
+                <a href="/">总览</a>
+                <a href="/orders">订单管理</a>
+                <a href="/entities">实体管理</a>
+                <a href="/balances">账号余额</a>
+                <a href="/exchange">货币兑换</a>
+                <a href="/settings/rates">汇率设置</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="wrap page-body">
+        {% if messages %}
+            <section class="flash-list">
+                {% for item in messages %}
+                    <div class="flash flash-{{ item.level }}">{{ item.message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

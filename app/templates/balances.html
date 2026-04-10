@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}账号余额 - 换汇资金托管系统{% endblock %}
+{% block content %}
+<section class="card">
+    <h2>公司账号余额</h2>
+    <div class="balance-grid">
+        {% for account in company_accounts %}
+        <article class="balance-card">
+            <h3>{{ account.name }}</h3>
+            <p>{{ account.bank_name }} / {{ account.account_no }}</p>
+            <ul class="balance-list">
+                {% for currency in currencies %}<li><span>{{ currency }}</span><strong>{{ balances.get(account.id, {}).get(currency, 0) }}</strong></li>{% endfor %}
+            </ul>
+        </article>
+        {% else %}
+        <p class="empty">暂无公司账号。</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
