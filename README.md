@@ -45,3 +45,21 @@ $env:PORT="9000"
 $env:RELOAD="true"
 .venv\Scripts\python.exe run_server.py
 ```
+
+## 数据库迁移
+
+如果你之前已经运行过旧版本，旧的 `data/app.db` 里以下字段可能还是必填：
+
+- `orders.target_account_id`
+- `orders.payout_amount`
+- `orders.payout_currency`
+
+这会导致“创建订单时只录入入金信息”无法真正写入数据库。
+
+迁移命令：
+
+```powershell
+.venv\Scripts\python.exe scripts\migrate_orders_target_account_nullable.py
+```
+
+迁移完成后再启动程序即可。

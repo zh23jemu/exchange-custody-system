@@ -190,13 +190,18 @@ def add_ledger_entry(
     )
 
 
-def _validate_order_relations(db: Session, customer_id: int, target_account_id: int, supplier_id: int | None) -> None:
+def _validate_order_relations(
+    db: Session, customer_id: int, target_account_id: int | None, supplier_id: int | None
+) -> None:
     customer = db.get(Customer, customer_id)
-    target = db.get(CustomerTargetAccount, target_account_id)
-    if customer is None or target is None:
-        raise BusinessError("客户或目标账号不存在")
-    if target.customer_id != customer_id:
-        raise BusinessError("客户目标账号不属于当前客户")
+    if customer is None:
+        raise BusinessError("客户不存在")
+    if target_account_id is not None:
+        target = db.get(CustomerTargetAccount, target_account_id)
+        if target is None:
+            raise BusinessError("客户目标账号不存在")
+        if target.customer_id != customer_id:
+            raise BusinessError("客户目标账号不属于当前客户")
     if supplier_id is not None and db.get(Supplier, supplier_id) is None:
         raise BusinessError("中转商不存在")
 
@@ -206,23 +211,29 @@ def create_order(
     order_type: str,
     customer_id: int,
     company_account_id: int,
-    target_account_id: int,
+    target_account_id: int | None,
     deposit_amount: Decimal,
     deposit_currency: str,
-    payout_amount: Decimal,
-    payout_currency: str,
+    payout_amount: Decimal | None,
+    payout_currency: str | None,
     supplier_id: int | None = None,
     notes: str = "",
 ) -> Order:
     validate_currency(deposit_currency)
-    validate_currency(payout_currency)
+    if payout_currency:
+        validate_currency(payout_currency)
     _validate_order_relations(db, customer_id, target_account_id, supplier_id)
     if db.get(CompanyAccount, company_account_id) is None:
         raise BusinessError("公司账号不存在")
     deposit_amount = quantize_money(deposit_amount)
-    payout_amount = quantize_money(payout_amount)
-    if deposit_amount <= 0 or payout_amount <= 0:
-        raise BusinessError("金额必须大于 0")
+    if payout_amount is not None:
+        payout_amount = quantize_money(payout_amount)
+    if deposit_amount <= 0:
+        raise BusinessError("入账金额必须大于 0")
+    if payout_amount is not None and payout_amount <= 0:
+        raise BusinessError("转出金额必须大于 0")
+    if (payout_amount is None) != (payout_currency is None):
+        raise BusinessError("转出金额和转出币种需要同时填写，或同时留空")
 
     if order_type == ORDER_TYPE_CASH:
         status = CASH_ORDER_FLOW[0]
@@ -292,6 +303,10 @@ def advance_order(db: Session, order_id: int) -> Order:
             customer_id=order.customer_id,
         )
     if next_status == ORDER_STATUS_COMPLETED:
+        if order.target_account_id is None:
+            raise BusinessError("完成转出前，请先补充客户目标账号")
+        if order.payout_amount is None or order.payout_currency is None:
+            raise BusinessError("完成转出前，请先补充转出金额和转出币种")
         current_balance = get_balance(db, order.company_account_id, order.payout_currency)
         if current_balance < order.payout_amount:
             raise BusinessError(
@@ -310,6 +325,41 @@ def advance_order(db: Session, order_id: int) -> Order:
     old_status = order.status
     order.status = next_status
     log_status(db, order, to_status=next_status, from_status=old_status, note="推进订单状态")
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+def update_order_target_account(db: Session, order_id: int, target_account_id: int) -> Order:
+    order = db.get(Order, order_id)
+    if order is None:
+        raise BusinessError("订单不存在")
+    target = db.get(CustomerTargetAccount, target_account_id)
+    if target is None:
+        raise BusinessError("客户目标账号不存在")
+    if target.customer_id != order.customer_id:
+        raise BusinessError("客户目标账号不属于当前订单客户")
+    order.target_account_id = target_account_id
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+def update_order_payout_details(
+    db: Session,
+    order_id: int,
+    payout_amount: Decimal,
+    payout_currency: str,
+) -> Order:
+    order = db.get(Order, order_id)
+    if order is None:
+        raise BusinessError("订单不存在")
+    validate_currency(payout_currency)
+    payout_amount = quantize_money(payout_amount)
+    if payout_amount <= 0:
+        raise BusinessError("转出金额必须大于 0")
+    order.payout_amount = payout_amount
+    order.payout_currency = payout_currency
     db.commit()
     db.refresh(order)
     return order

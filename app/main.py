@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from .constants import CURRENCIES, DEFAULT_RATE_BASE, ORDER_TYPE_BANK, ORDER_TYPE_CASH
-from .db import engine, get_db
+from .db import detect_schema_warnings, engine, get_db
 from .models import Base, CompanyAccount, Customer, CustomerTargetAccount, ExchangeRate, ExchangeRecord, Supplier
 from .services import (
     BusinessError,
@@ -31,6 +31,8 @@ from .services import (
     get_orders,
     get_rates_map,
     seed_default_rates,
+    update_order_payout_details,
+    update_order_target_account,
     update_exchange_rate,
 )
 
@@ -52,9 +54,32 @@ def consume_flash(request: Request):
 
 
 def render(request: Request, template_name: str, context: dict):
-    base_context = {"request": request, "messages": consume_flash(request), "currencies": CURRENCIES}
+    base_context = {
+        "request": request,
+        "messages": consume_flash(request),
+        "currencies": CURRENCIES,
+        "schema_warnings": detect_schema_warnings(),
+    }
     base_context.update(context)
     return templates.TemplateResponse(request, template_name, base_context)
+
+
+def parse_optional_int(value: str | None) -> int | None:
+    if value in (None, ""):
+        return None
+    return int(value)
+
+
+def parse_optional_decimal(value: str | None) -> Decimal | None:
+    if value in (None, ""):
+        return None
+    return Decimal(value)
+
+
+def parse_optional_str(value: str | None) -> str | None:
+    if value in (None, ""):
+        return None
+    return value
 
 
 @asynccontextmanager
@@ -208,11 +233,11 @@ def create_cash_order_route(
     customer_id: int = Form(...),
     supplier_id: int = Form(...),
     company_account_id: int = Form(...),
-    target_account_id: int = Form(...),
+    target_account_id: str | None = Form(None),
     deposit_amount: str = Form(...),
     deposit_currency: str = Form(...),
-    payout_amount: str = Form(...),
-    payout_currency: str = Form(...),
+    payout_amount: str | None = Form(None),
+    payout_currency: str | None = Form(None),
     notes: str = Form(""),
     db: Session = Depends(get_db),
 ):
@@ -222,11 +247,11 @@ def create_cash_order_route(
         order_type=ORDER_TYPE_CASH,
         customer_id=customer_id,
         company_account_id=company_account_id,
-        target_account_id=target_account_id,
+        target_account_id=parse_optional_int(target_account_id),
         deposit_amount=Decimal(deposit_amount),
         deposit_currency=deposit_currency,
-        payout_amount=Decimal(payout_amount),
-        payout_currency=payout_currency,
+        payout_amount=parse_optional_decimal(payout_amount),
+        payout_currency=parse_optional_str(payout_currency),
         supplier_id=supplier_id,
         notes=notes,
     )
@@ -237,11 +262,11 @@ def create_bank_order_route(
     request: Request,
     customer_id: int = Form(...),
     company_account_id: int = Form(...),
-    target_account_id: int = Form(...),
+    target_account_id: str | None = Form(None),
     deposit_amount: str = Form(...),
     deposit_currency: str = Form(...),
-    payout_amount: str = Form(...),
-    payout_currency: str = Form(...),
+    payout_amount: str | None = Form(None),
+    payout_currency: str | None = Form(None),
     notes: str = Form(""),
     db: Session = Depends(get_db),
 ):
@@ -251,11 +276,11 @@ def create_bank_order_route(
         order_type=ORDER_TYPE_BANK,
         customer_id=customer_id,
         company_account_id=company_account_id,
-        target_account_id=target_account_id,
+        target_account_id=parse_optional_int(target_account_id),
         deposit_amount=Decimal(deposit_amount),
         deposit_currency=deposit_currency,
-        payout_amount=Decimal(payout_amount),
-        payout_currency=payout_currency,
+        payout_amount=parse_optional_decimal(payout_amount),
+        payout_currency=parse_optional_str(payout_currency),
         supplier_id=None,
         notes=notes,
     )
@@ -267,6 +292,42 @@ def advance_order_route(request: Request, order_id: int, db: Session = Depends(g
         order = advance_order(db, order_id)
         flash(request, f"订单 #{order.id} 已推进到 {order.status}")
     except BusinessError as exc:
+        flash(request, str(exc), "error")
+    return RedirectResponse("/orders", status_code=303)
+
+
+@app.post("/orders/{order_id}/target-account")
+def update_order_target_account_route(
+    request: Request,
+    order_id: int,
+    target_account_id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        update_order_target_account(db, order_id=order_id, target_account_id=target_account_id)
+        flash(request, f"订单 #{order_id} 的转出目标账号已更新")
+    except BusinessError as exc:
+        flash(request, str(exc), "error")
+    return RedirectResponse("/orders", status_code=303)
+
+
+@app.post("/orders/{order_id}/payout")
+def update_order_payout_route(
+    request: Request,
+    order_id: int,
+    payout_amount: str = Form(...),
+    payout_currency: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        update_order_payout_details(
+            db,
+            order_id=order_id,
+            payout_amount=Decimal(payout_amount),
+            payout_currency=payout_currency,
+        )
+        flash(request, f"订单 #{order_id} 的转出信息已更新")
+    except (BusinessError, ArithmeticError, ValueError) as exc:
         flash(request, str(exc), "error")
     return RedirectResponse("/orders", status_code=303)
 

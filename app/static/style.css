@@ -54,6 +54,7 @@ a { color: inherit; text-decoration: none; }
 .span-all { grid-column: 1 / -1; }
 input, select { width: 100%; border: 1px solid var(--line); background: white; border-radius: 12px; padding: 12px 14px; font: inherit; }
 .inline-form { flex-direction: row; align-items: center; }
+.table-form { display: grid; gap: 8px; min-width: 180px; margin-bottom: 8px; }
 .table-shell { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 720px; }
 th, td { text-align: left; padding: 14px 12px; border-bottom: 1px solid rgba(28, 28, 28, 0.08); }

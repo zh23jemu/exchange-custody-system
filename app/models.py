@@ -71,17 +71,19 @@ class Order(Base, TimestampMixin):
     customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"))
     supplier_id: Mapped[Optional[int]] = mapped_column(ForeignKey("suppliers.id"), nullable=True)
     company_account_id: Mapped[int] = mapped_column(ForeignKey("company_accounts.id"))
-    target_account_id: Mapped[int] = mapped_column(ForeignKey("customer_target_accounts.id"))
+    target_account_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("customer_target_accounts.id"), nullable=True
+    )
     deposit_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     deposit_currency: Mapped[str] = mapped_column(String(8))
-    payout_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2))
-    payout_currency: Mapped[str] = mapped_column(String(8))
+    payout_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(18, 2), nullable=True)
+    payout_currency: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
     status: Mapped[str] = mapped_column(String(20))
     notes: Mapped[str] = mapped_column(Text, default="")
     customer: Mapped["Customer"] = relationship(back_populates="orders")
     supplier: Mapped[Optional["Supplier"]] = relationship(back_populates="orders")
     company_account: Mapped["CompanyAccount"] = relationship(back_populates="orders")
-    target_account: Mapped["CustomerTargetAccount"] = relationship(back_populates="orders")
+    target_account: Mapped[Optional["CustomerTargetAccount"]] = relationship(back_populates="orders")
     status_logs: Mapped[list["OrderStatusLog"]] = relationship(back_populates="order")
     ledger_entries: Mapped[list["AccountBalanceLedger"]] = relationship(back_populates="order")
 

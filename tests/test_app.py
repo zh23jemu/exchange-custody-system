@@ -169,6 +169,82 @@ def test_bank_order_and_rate_update(client):
         assert Decimal(row.rate_to_aud_base) == Decimal("0.700000")
 
 
+def test_order_can_be_created_without_target_account_and_completed_after_update(client):
+    http, SessionLocal = client
+    http.post("/customers", data={"name": "Sammer", "contact": "wx-s"})
+    http.post("/suppliers", data={"name": "Bob", "contact": "wx-b"})
+    http.post(
+        "/company-accounts",
+        data={"name": "HSBC AUD", "bank_name": "HSBC", "account_no": "001", "primary_currency": "AUD"},
+    )
+
+    with SessionLocal() as db:
+        customer = db.query(Customer).filter_by(name="Sammer").one()
+        supplier = db.query(Supplier).filter_by(name="Bob").one()
+        account = db.query(CompanyAccount).filter_by(name="HSBC AUD").one()
+
+    http.post(
+        "/orders/cash",
+        data={
+            "customer_id": customer.id,
+            "supplier_id": supplier.id,
+            "company_account_id": account.id,
+            "target_account_id": "",
+            "deposit_amount": "1000",
+            "deposit_currency": "AUD",
+            "payout_amount": "",
+            "payout_currency": "",
+            "notes": "no target yet",
+        },
+    )
+
+    with SessionLocal() as db:
+        order = db.query(Order).one()
+        assert order.target_account_id is None
+        assert order.payout_amount is None
+        assert order.payout_currency is None
+
+    http.post("/orders/1/advance")
+    http.post("/orders/1/advance")
+    blocked = http.post("/orders/1/advance")
+    assert blocked.status_code == 200
+
+    http.post(
+        "/customer-target-accounts",
+        data={
+            "customer_id": customer.id,
+            "account_name": "Sammer USD",
+            "bank_name": "CBA",
+            "account_no": "ACC-100",
+            "currency": "USD",
+            "holder_name": "Sammer",
+        },
+    )
+
+    with SessionLocal() as db:
+        target = db.query(CustomerTargetAccount).filter_by(account_name="Sammer USD").one()
+
+    http.post("/orders/1/payout", data={"payout_amount": "650", "payout_currency": "USD"})
+    http.post("/orders/1/target-account", data={"target_account_id": target.id})
+    http.post(
+        "/exchange",
+        data={
+            "company_account_id": account.id,
+            "source_currency": "AUD",
+            "source_amount": "1000",
+            "target_currency": "USD",
+        },
+    )
+    http.post("/orders/1/advance")
+
+    with SessionLocal() as db:
+        order = db.query(Order).one()
+        assert order.target_account_id == target.id
+        assert Decimal(order.payout_amount) == Decimal("650.00")
+        assert order.payout_currency == "USD"
+        assert order.status == "已完成"
+
+
 def test_sample_data_seed_route(client):
     http, SessionLocal = client
 

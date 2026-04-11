@@ -25,6 +25,13 @@
     </header>
 
     <main class="wrap page-body">
+        {% if schema_warnings %}
+            <section class="flash-list">
+                {% for item in schema_warnings %}
+                    <div class="flash flash-error">{{ item }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
         {% if messages %}
             <section class="flash-list">
                 {% for item in messages %}
