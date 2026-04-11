@@ -18,9 +18,30 @@ Windows:
 
 ```powershell
 .venv\Scripts\python.exe -m pip install -r requirements.txt
-.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+.venv\Scripts\python.exe run_server.py
 ```
 
 启动后访问：
 
-[http://127.0.0.1:8000](http://127.0.0.1:8000)
+[http://127.0.0.1:8080](http://127.0.0.1:8080)
+
+## 服务器部署
+
+默认监听：
+
+- `HOST=0.0.0.0`
+- `PORT=8080`
+
+如果要切换端口：
+
+```powershell
+$env:PORT="9000"
+.venv\Scripts\python.exe run_server.py
+```
+
+如果要开启热更新：
+
+```powershell
+$env:RELOAD="true"
+.venv\Scripts\python.exe run_server.py
+```
