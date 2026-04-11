@@ -427,3 +427,92 @@ def get_customer_ledger_summary(db: Session, customer_id: int) -> tuple[list[Acc
     for entry in entries:
         totals[entry.currency] += Decimal(entry.amount_delta)
     return entries, {currency: quantize_money(total) for currency, total in totals.items()}
+
+
+def create_sample_data(db: Session) -> None:
+    has_data = db.scalar(select(func.count(Customer.id))) or 0
+    if has_data:
+        raise BusinessError("系统中已经存在数据，示例数据只允许在空库中初始化")
+
+    alice = create_customer(db, "Alice", "微信: alice-fx")
+    chen = create_customer(db, "陈先生", "微信: chen-cny")
+    emma = create_customer(db, "Emma", "电话: 0400-000-001")
+
+    bob = create_supplier(db, "Bob", "微信: bob-bridge")
+    pin = create_supplier(db, "PIN", "微信: pin-bridge")
+
+    hsbc_aud = create_company_account(db, "HSBC AUD 主账号", "HSBC", "AU-001-8899", "AUD")
+    cba_usd = create_company_account(db, "CBA USD 备用账号", "Commonwealth", "US-7788-1122", "USD")
+
+    alice_target = create_customer_target_account(
+        db, alice.id, "Alice 美元收款卡", "Bank of America", "US-ACC-1001", "USD", "Alice"
+    )
+    chen_target = create_customer_target_account(
+        db, chen.id, "陈先生 人民币卡", "中国银行", "CN-ACC-2001", "CNY", "陈先生"
+    )
+    emma_target = create_customer_target_account(
+        db, emma.id, "Emma 欧元账号", "Deutsche Bank", "EU-ACC-3001", "EUR", "Emma"
+    )
+
+    order1 = create_order(
+        db,
+        order_type=ORDER_TYPE_BANK,
+        customer_id=alice.id,
+        company_account_id=hsbc_aud.id,
+        target_account_id=alice_target.id,
+        deposit_amount=Decimal("1200"),
+        deposit_currency="AUD",
+        payout_amount=Decimal("620"),
+        payout_currency="USD",
+        notes="客户直接入账，后续换汇到美元",
+    )
+    create_exchange(db, hsbc_aud.id, "AUD", Decimal("1000"), "USD")
+    advance_order(db, order1.id)
+
+    order2 = create_order(
+        db,
+        order_type=ORDER_TYPE_CASH,
+        customer_id=chen.id,
+        supplier_id=bob.id,
+        company_account_id=hsbc_aud.id,
+        target_account_id=chen_target.id,
+        deposit_amount=Decimal("3000"),
+        deposit_currency="AUD",
+        payout_amount=Decimal("14100"),
+        payout_currency="CNY",
+        notes="现金单，已交中转商并确认到账，待后续完成",
+    )
+    advance_order(db, order2.id)
+    advance_order(db, order2.id)
+
+    order3 = create_order(
+        db,
+        order_type=ORDER_TYPE_CASH,
+        customer_id=emma.id,
+        supplier_id=pin.id,
+        company_account_id=cba_usd.id,
+        target_account_id=emma_target.id,
+        deposit_amount=Decimal("2000"),
+        deposit_currency="USD",
+        payout_amount=Decimal("1800"),
+        payout_currency="EUR",
+        notes="新建现金单，尚未交给中转商",
+    )
+
+    order4 = create_order(
+        db,
+        order_type=ORDER_TYPE_BANK,
+        customer_id=chen.id,
+        company_account_id=cba_usd.id,
+        target_account_id=chen_target.id,
+        deposit_amount=Decimal("2500"),
+        deposit_currency="USD",
+        payout_amount=Decimal("2200"),
+        payout_currency="USD",
+        notes="直接转账单，已在公司账号待完成",
+    )
+
+    create_exchange(db, cba_usd.id, "USD", Decimal("300"), "EUR")
+
+    if order3.id <= 0 or order4.id <= 0:
+        raise BusinessError("示例数据初始化失败")

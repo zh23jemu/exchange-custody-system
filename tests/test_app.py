@@ -167,3 +167,21 @@ def test_bank_order_and_rate_update(client):
     with SessionLocal() as db:
         row = db.query(ExchangeRate).filter_by(currency="USD").one()
         assert Decimal(row.rate_to_aud_base) == Decimal("0.700000")
+
+
+def test_sample_data_seed_route(client):
+    http, SessionLocal = client
+
+    first = http.post("/sample-data")
+    assert first.status_code == 200
+
+    with SessionLocal() as db:
+        assert db.query(Customer).count() >= 3
+        assert db.query(CompanyAccount).count() >= 2
+        assert db.query(Order).count() >= 4
+
+    second = http.post("/sample-data")
+    assert second.status_code == 200
+
+    with SessionLocal() as db:
+        assert db.query(Customer).count() >= 3

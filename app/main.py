@@ -20,6 +20,7 @@ from .services import (
     advance_order,
     create_company_account,
     create_customer,
+    create_sample_data,
     create_customer_target_account,
     create_exchange,
     create_order,
@@ -82,8 +83,19 @@ def home(request: Request, db: Session = Depends(get_db)):
             "recent_orders": get_orders(db)[:8],
             "balances": get_account_balances(db),
             "accounts": db.scalars(select(CompanyAccount).order_by(CompanyAccount.name)).all(),
+            "has_any_data": (db.scalar(select(Customer.id).limit(1)) is not None),
         },
     )
+
+
+@app.post("/sample-data")
+def create_sample_data_route(request: Request, db: Session = Depends(get_db)):
+    try:
+        create_sample_data(db)
+        flash(request, "示例数据已初始化，可以直接开始体验订单、兑换和流水功能")
+    except BusinessError as exc:
+        flash(request, str(exc), "error")
+    return RedirectResponse("/", status_code=303)
 
 
 @app.get("/entities")

@@ -10,6 +10,21 @@
 
 <section class="card">
     <div class="section-head">
+        <div>
+            <h2>快速体验</h2>
+            <p class="muted">空库时可一键写入演示客户、账号、订单、兑换记录和客户流水。</p>
+        </div>
+        <form method="post" action="/sample-data">
+            <button class="button" type="submit" {% if has_any_data %}disabled{% endif %}>初始化示例数据</button>
+        </form>
+    </div>
+    {% if has_any_data %}
+    <p class="muted">当前系统中已经有数据，示例数据按钮已禁用，避免重复写入。</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <div class="section-head">
         <h2>最近订单</h2>
         <a class="button button-secondary" href="/orders">进入订单管理</a>
     </div>
