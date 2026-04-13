@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}账号流水 - 换汇资金托管系统{% endblock %}
+{% block content %}
+<section class="data-panel">
+    <div class="data-toolbar">
+        <div>
+            <div class="workspace-kicker">ACCOUNT STATEMENT</div>
+            <h2>账号流水</h2>
+        </div>
+        <form method="get" action="/statement" class="data-toolbar-actions">
+            <select name="company_account_id">
+                <option value="">全部公司账号</option>
+                {% for account in company_accounts %}
+                <option value="{{ account.id }}" {% if selected_company_account_id == account.id %}selected{% endif %}>{{ account.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="currency">
+                <option value="">全部币种</option>
+                {% for item in currencies %}
+                <option value="{{ item }}" {% if selected_currency == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+            </select>
+            <input type="date" name="date_from" value="{{ selected_date_from }}">
+            <input type="date" name="date_to" value="{{ selected_date_to }}">
+            <button class="button button-secondary" type="submit">查看流水</button>
+            <a class="button button-secondary" href="/statement/export?company_account_id={{ selected_company_account_id or '' }}&currency={{ selected_currency }}&date_from={{ selected_date_from }}&date_to={{ selected_date_to }}">导出 CSV</a>
+        </form>
+    </div>
+
+    <section class="stats-grid compact">
+        <article class="stat-card">
+            <h3>入账总额</h3>
+            <strong>{{ summary.total_inflow }}</strong>
+        </article>
+        <article class="stat-card">
+            <h3>出账总额</h3>
+            <strong>{{ summary.total_outflow }}</strong>
+        </article>
+        <article class="stat-card">
+            <h3>期末余额</h3>
+            <strong>{{ summary.closing_balance }}</strong>
+        </article>
+        <article class="stat-card">
+            <h3>流水笔数</h3>
+            <strong>{{ summary.row_count }}</strong>
+        </article>
+    </section>
+
+    <div class="sheet-grid-shell">
+        <table class="sheet-grid statement-grid">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Reference</th>
+                    <th>Counterparty</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Settled Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>{{ row.created_at.strftime("%b %d, %Y %H:%M") }}</td>
+                    <td>
+                        <div class="grid-primary">{{ row.reference }}</div>
+                        {% if row.note %}
+                        <div class="grid-secondary">{{ row.note }}</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.counterparty }}</td>
+                    <td>
+                        <span class="statement-type statement-type-{{ row.entry_type|replace(' ', '-')|lower }}">
+                            {{ row.entry_type }}
+                        </span>
+                    </td>
+                    <td class="{% if row.amount_delta < 0 %}amount-negative{% else %}amount-positive{% endif %}">
+                        {% if row.amount_delta > 0 %}+{% endif %}{{ row.amount_delta }} {{ row.currency }}
+                    </td>
+                    <td>{{ row.settled_balance }} {{ row.currency }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="empty">暂无流水记录</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

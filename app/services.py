@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from sqlalchemy import asc, desc, func, or_, select
@@ -39,6 +41,26 @@ SIXPLACES = Decimal("0.000001")
 
 class BusinessError(Exception):
     pass
+
+
+@dataclass
+class AccountStatementRow:
+    created_at: object
+    reference: str
+    counterparty: str
+    entry_type: str
+    amount_delta: Decimal
+    settled_balance: Decimal
+    currency: str
+    note: str
+
+
+@dataclass
+class AccountStatementSummary:
+    total_inflow: Decimal
+    total_outflow: Decimal
+    closing_balance: Decimal
+    row_count: int
 
 
 def quantize_money(value: Decimal | str | float) -> Decimal:
@@ -558,6 +580,92 @@ def get_customer_ledger_summary(db: Session, customer_id: int) -> tuple[list[Acc
     for entry in entries:
         totals[entry.currency] += Decimal(entry.amount_delta)
     return entries, {currency: quantize_money(total) for currency, total in totals.items()}
+
+
+def get_account_statement(
+    db: Session,
+    company_account_id: int | None = None,
+    currency: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+) -> tuple[list[AccountStatementRow], dict[int, dict[str, Decimal]], AccountStatementSummary]:
+    stmt = select(AccountBalanceLedger).order_by(
+        AccountBalanceLedger.company_account_id.asc(),
+        AccountBalanceLedger.currency.asc(),
+        AccountBalanceLedger.created_at.asc(),
+        AccountBalanceLedger.id.asc(),
+    )
+    if company_account_id is not None:
+        stmt = stmt.where(AccountBalanceLedger.company_account_id == company_account_id)
+    if currency:
+        stmt = stmt.where(AccountBalanceLedger.currency == currency)
+    if date_from is not None:
+        stmt = stmt.where(AccountBalanceLedger.created_at >= date_from)
+    if date_to is not None:
+        stmt = stmt.where(AccountBalanceLedger.created_at < date_to + timedelta(days=1))
+
+    entries = list(db.scalars(stmt).all())
+    running_balances: dict[int, dict[str, Decimal]] = defaultdict(lambda: defaultdict(lambda: Decimal("0")))
+    rows: list[AccountStatementRow] = []
+    total_inflow = Decimal("0")
+    total_outflow = Decimal("0")
+
+    for entry in entries:
+        company_map = running_balances[entry.company_account_id]
+        company_map[entry.currency] += Decimal(entry.amount_delta)
+        order = entry.order
+        counterparty = "-"
+        reference = f"TXN-{entry.created_at.strftime('%y%m%d')}-{entry.id:06d}"
+        entry_type = "Adjustment"
+
+        if entry.entry_kind == LEDGER_KIND_ORDER_INFLOW:
+            entry_type = "Deposit"
+            if order and order.customer:
+                counterparty = order.customer.name
+            reference = f"DP-{entry.created_at.strftime('%H%M')}-{entry.order_id or entry.id:06d}"
+        elif entry.entry_kind == LEDGER_KIND_ORDER_PAYOUT:
+            entry_type = "Withdrawal"
+            if order and order.target_account:
+                counterparty = order.target_account.holder_name or order.target_account.account_name
+            elif order and order.customer:
+                counterparty = order.customer.name
+            reference = f"WD-{entry.created_at.strftime('%H%M')}-{entry.order_id or entry.id:06d}"
+        elif entry.entry_kind == LEDGER_KIND_EXCHANGE_OUT:
+            entry_type = "Exchange Out"
+            reference = f"FXO-{entry.created_at.strftime('%H%M')}-{entry.id:06d}"
+            counterparty = "内部换汇"
+        elif entry.entry_kind == LEDGER_KIND_EXCHANGE_IN:
+            entry_type = "Exchange In"
+            reference = f"FXI-{entry.created_at.strftime('%H%M')}-{entry.id:06d}"
+            counterparty = "内部换汇"
+
+        if Decimal(entry.amount_delta) > 0:
+            total_inflow += Decimal(entry.amount_delta)
+        else:
+            total_outflow += abs(Decimal(entry.amount_delta))
+
+        rows.append(
+            AccountStatementRow(
+                created_at=entry.created_at,
+                reference=reference,
+                counterparty=counterparty,
+                entry_type=entry_type,
+                amount_delta=quantize_money(entry.amount_delta),
+                settled_balance=quantize_money(company_map[entry.currency]),
+                currency=entry.currency,
+                note=entry.reference_note,
+            )
+        )
+
+    rows.sort(key=lambda item: (item.created_at, item.reference), reverse=True)
+    closing_balance = rows[0].settled_balance if rows else Decimal("0")
+    summary = AccountStatementSummary(
+        total_inflow=quantize_money(total_inflow),
+        total_outflow=quantize_money(total_outflow),
+        closing_balance=quantize_money(closing_balance),
+        row_count=len(rows),
+    )
+    return rows, get_account_balances(db), summary
 
 
 def create_sample_data(db: Session) -> None:

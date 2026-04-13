@@ -279,3 +279,20 @@ def test_orders_filter_accepts_empty_query_values(client):
         },
     )
     assert response.status_code == 200
+
+
+def test_account_statement_page(client):
+    http, _ = client
+    http.post("/sample-data")
+    response = http.get("/statement")
+    assert response.status_code == 200
+    assert "ACCOUNT STATEMENT" in response.text
+
+
+def test_account_statement_export_csv(client):
+    http, _ = client
+    http.post("/sample-data")
+    response = http.get("/statement/export")
+    assert response.status_code == 200
+    assert "text/csv" in response.headers["content-type"]
+    assert "Reference" in response.text

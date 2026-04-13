@@ -292,6 +292,39 @@ th { color: var(--muted); font-size: 13px; text-transform: uppercase; }
     background: #ffe6d2;
     color: #99511e;
 }
+.statement-grid th,
+.statement-grid td {
+    padding: 16px 14px;
+}
+.statement-type {
+    display: inline-flex;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13px;
+}
+.statement-type-deposit,
+.statement-type-exchange-in {
+    background: #daf5e3;
+    color: #18794e;
+}
+.statement-type-withdrawal,
+.statement-type-exchange-out {
+    background: #fde1e1;
+    color: #c43333;
+}
+.statement-type-adjustment {
+    background: #ece8ff;
+    color: #5b47b5;
+}
+.amount-positive {
+    color: #0f8a4a;
+    font-weight: 700;
+}
+.amount-negative {
+    color: #d92d20;
+    font-weight: 700;
+}
 @media (max-width: 900px) {
     .site-header .wrap, .section-head, .inline-form { flex-direction: column; align-items: stretch; }
     .stats-grid, .two-col, .form-grid { grid-template-columns: 1fr; }

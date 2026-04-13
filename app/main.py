@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import csv
+import io
+from datetime import datetime
 from decimal import Decimal
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlencode
 
 from fastapi import Depends, FastAPI, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -27,6 +30,7 @@ from .services import (
     create_order,
     create_supplier,
     get_account_balances,
+    get_account_statement,
     get_customer_ledger_summary,
     get_dashboard_stats,
     get_orders,
@@ -82,6 +86,12 @@ def parse_optional_str(value: str | None) -> str | None:
     if value in (None, ""):
         return None
     return value
+
+
+def parse_optional_date(value: str | None) -> datetime | None:
+    if value in (None, ""):
+        return None
+    return datetime.strptime(value, "%Y-%m-%d")
 
 
 @asynccontextmanager
@@ -450,6 +460,85 @@ def balances_page(request: Request, db: Session = Depends(get_db)):
             "balances": get_account_balances(db),
         },
     )
+
+
+@app.get("/statement")
+def account_statement_page(
+    request: Request,
+    company_account_id: str | None = None,
+    currency: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    db: Session = Depends(get_db),
+):
+    parsed_company_account_id = parse_optional_int(company_account_id)
+    parsed_currency = parse_optional_str(currency)
+    parsed_date_from = parse_optional_date(date_from)
+    parsed_date_to = parse_optional_date(date_to)
+    rows, balances, summary = get_account_statement(
+        db,
+        company_account_id=parsed_company_account_id,
+        currency=parsed_currency,
+        date_from=parsed_date_from,
+        date_to=parsed_date_to,
+    )
+    company_accounts = db.scalars(select(CompanyAccount).order_by(CompanyAccount.name)).all()
+    return render(
+        request,
+        "statement.html",
+        {
+            "rows": rows,
+            "balances": balances,
+            "summary": summary,
+            "company_accounts": company_accounts,
+            "selected_company_account_id": parsed_company_account_id,
+            "selected_currency": parsed_currency or "",
+            "selected_date_from": date_from or "",
+            "selected_date_to": date_to or "",
+        },
+    )
+
+
+@app.get("/statement/export")
+def export_account_statement_csv(
+    company_account_id: str | None = None,
+    currency: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    db: Session = Depends(get_db),
+):
+    parsed_company_account_id = parse_optional_int(company_account_id)
+    parsed_currency = parse_optional_str(currency)
+    parsed_date_from = parse_optional_date(date_from)
+    parsed_date_to = parse_optional_date(date_to)
+    rows, _, _ = get_account_statement(
+        db,
+        company_account_id=parsed_company_account_id,
+        currency=parsed_currency,
+        date_from=parsed_date_from,
+        date_to=parsed_date_to,
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Date", "Reference", "Counterparty", "Type", "Amount", "Settled Balance", "Currency", "Note"])
+    for row in rows:
+        writer.writerow(
+            [
+                row.created_at.strftime("%Y-%m-%d %H:%M"),
+                row.reference,
+                row.counterparty,
+                row.entry_type,
+                f"{row.amount_delta}",
+                f"{row.settled_balance}",
+                row.currency,
+                row.note,
+            ]
+        )
+
+    buffer = io.BytesIO(output.getvalue().encode("utf-8-sig"))
+    headers = {"Content-Disposition": 'attachment; filename="account_statement.csv"'}
+    return StreamingResponse(buffer, media_type="text/csv; charset=utf-8", headers=headers)
 
 
 @app.get("/customers/{customer_id}/ledger")
