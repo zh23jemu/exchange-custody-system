@@ -261,3 +261,21 @@ def test_sample_data_seed_route(client):
 
     with SessionLocal() as db:
         assert db.query(Customer).count() >= 3
+
+
+def test_orders_filter_accepts_empty_query_values(client):
+    http, _ = client
+    response = http.get(
+        "/orders",
+        params={
+            "keyword": "",
+            "customer_id": "",
+            "company_account_id": "",
+            "target_account_id": "",
+            "status": "待处理",
+            "view_mode": "",
+            "sort_by": "created_at",
+            "sort_dir": "desc",
+        },
+    )
+    assert response.status_code == 200

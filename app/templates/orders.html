@@ -1,114 +1,231 @@
 {% extends "base.html" %}
-{% block title %}订单管理 - 换汇资金托管系统{% endblock %}
+{% block title %}订单工作台 - 换汇资金托管系统{% endblock %}
 {% block content %}
-<div class="two-col">
-    <section class="card">
-        <h2>创建现金订单</h2>
-        <form method="post" action="/orders/cash" class="form-grid">
-            <label>客户<select name="customer_id" required>{% for customer in customers %}<option value="{{ customer.id }}">{{ customer.name }}</option>{% endfor %}</select></label>
-            <label>中转商<select name="supplier_id" required>{% for supplier in suppliers %}<option value="{{ supplier.id }}">{{ supplier.name }}</option>{% endfor %}</select></label>
-            <label>公司账号<select name="company_account_id" required>{% for account in company_accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></label>
-            <label>入账金额<input name="deposit_amount" type="number" min="0.01" step="0.01" required></label>
-            <label>入金币种<select name="deposit_currency" required>{% for currency in currencies %}<option value="{{ currency }}">{{ currency }}</option>{% endfor %}</select></label>
-            <label class="span-all">备注<input name="notes"></label>
-            <button class="button" type="submit">创建现金订单</button>
-        </form>
-    </section>
+<section class="workspace-shell">
+    <aside class="workspace-sidebar">
+        <div class="workspace-brand">
+            <div class="workspace-kicker">ORDER DATABASE</div>
+            <h2>订单工作台</h2>
+            <p>像表格一样先看全局，再逐行补资料和推进状态。</p>
+        </div>
 
-    <section class="card">
-        <h2>创建直接转账订单</h2>
-        <form method="post" action="/orders/bank-transfer" class="form-grid">
-            <label>客户<select name="customer_id" required>{% for customer in customers %}<option value="{{ customer.id }}">{{ customer.name }}</option>{% endfor %}</select></label>
-            <label>公司账号<select name="company_account_id" required>{% for account in company_accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></label>
-            <label>入账金额<input name="deposit_amount" type="number" min="0.01" step="0.01" required></label>
-            <label>入金币种<select name="deposit_currency" required>{% for currency in currencies %}<option value="{{ currency }}">{{ currency }}</option>{% endfor %}</select></label>
-            <label class="span-all">备注<input name="notes"></label>
-            <button class="button" type="submit">创建转账订单</button>
-        </form>
-    </section>
-</div>
+        <nav class="view-nav">
+            <a class="view-item {% if selected_view_mode != 'needs_completion' and not selected_status %}active{% endif %}" href="{{ build_orders_url(status='', view_mode='') }}">
+                <span>全部订单</span>
+            </a>
+            <a class="view-item {% if selected_view_mode == 'needs_completion' %}active{% endif %}" href="{{ build_orders_url(view_mode='needs_completion', status='') }}">
+                <span>只看待补录</span>
+            </a>
+            {% for status in all_statuses %}
+            <a class="view-item {% if selected_status == status and selected_view_mode != 'needs_completion' %}active{% endif %}" href="{{ build_orders_url(status=status, view_mode='') }}">
+                <span>{{ status }}</span>
+            </a>
+            {% endfor %}
+        </nav>
 
-<section class="card">
-    <h2>说明</h2>
-    <p class="muted">创建订单时只记录入金信息。客户目标账号、转出金额、转出币种都可以在后续真正准备出款时，再到下方订单列表中补充。</p>
-</section>
+        <div class="quick-note">
+            <h3>录入规则</h3>
+            <p>新建订单时只录入入金。目标账号、转出金额、转出币种都在表格里后补。</p>
+        </div>
 
-<section class="card">
-    <div class="section-head">
-        <h2>订单列表</h2>
-        <form method="get" action="/orders" class="inline-form">
-            <select name="status">
-                <option value="">全部状态</option>
-                {% for status in all_statuses %}<option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}
-            </select>
-            <button class="button button-secondary" type="submit">筛选</button>
-        </form>
+        <details class="sheet-create" open>
+            <summary>新增现金单</summary>
+            <form method="post" action="/orders/cash" class="mini-form">
+                <label>客户<select name="customer_id" required>{% for customer in customers %}<option value="{{ customer.id }}">{{ customer.name }}</option>{% endfor %}</select></label>
+                <label>中转商<select name="supplier_id" required>{% for supplier in suppliers %}<option value="{{ supplier.id }}">{{ supplier.name }}</option>{% endfor %}</select></label>
+                <label>公司账号<select name="company_account_id" required>{% for account in company_accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></label>
+                <label>入账金额<input name="deposit_amount" type="number" min="0.01" step="0.01" required></label>
+                <label>入金币种<select name="deposit_currency" required>{% for currency in currencies %}<option value="{{ currency }}">{{ currency }}</option>{% endfor %}</select></label>
+                <label>备注<input name="notes"></label>
+                <button class="button" type="submit">新增现金单</button>
+            </form>
+        </details>
+
+        <details class="sheet-create">
+            <summary>新增转账单</summary>
+            <form method="post" action="/orders/bank-transfer" class="mini-form">
+                <label>客户<select name="customer_id" required>{% for customer in customers %}<option value="{{ customer.id }}">{{ customer.name }}</option>{% endfor %}</select></label>
+                <label>公司账号<select name="company_account_id" required>{% for account in company_accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></label>
+                <label>入账金额<input name="deposit_amount" type="number" min="0.01" step="0.01" required></label>
+                <label>入金币种<select name="deposit_currency" required>{% for currency in currencies %}<option value="{{ currency }}">{{ currency }}</option>{% endfor %}</select></label>
+                <label>备注<input name="notes"></label>
+                <button class="button" type="submit">新增转账单</button>
+            </form>
+        </details>
+    </aside>
+
+    <div class="workspace-main">
+        <section class="data-panel">
+            <div class="data-toolbar">
+                <div>
+                    <div class="workspace-kicker">TABLE VIEW</div>
+                    <h2>订单主表</h2>
+                </div>
+                <form method="get" action="/orders" class="data-toolbar-actions">
+                    <input type="text" name="keyword" value="{{ selected_keyword }}" placeholder="搜索客户、账号、备注">
+                    <select name="customer_id" id="filter-customer">
+                        <option value="">全部客户</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if selected_customer_id == customer.id %}selected{% endif %}>{{ customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="company_account_id">
+                        <option value="">全部公司账号</option>
+                        {% for account in company_accounts %}
+                        <option value="{{ account.id }}" {% if selected_company_account_id == account.id %}selected{% endif %}>{{ account.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="target_account_id" id="filter-target-account">
+                        <option value="">全部目标账号</option>
+                        {% for account in target_accounts %}
+                        <option value="{{ account.id }}" data-customer-id="{{ account.customer_id }}" {% if selected_target_account_id == account.id %}selected{% endif %}>{{ account.customer.name }} / {{ account.account_name }} / {{ account.currency }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="status">
+                        <option value="">全部状态</option>
+                        {% for status in all_statuses %}
+                        <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" name="view_mode" value="{{ selected_view_mode }}">
+                    <input type="hidden" name="sort_by" value="{{ selected_sort_by }}">
+                    <input type="hidden" name="sort_dir" value="{{ selected_sort_dir }}">
+                    <button class="button button-secondary" type="submit">应用视图</button>
+                    <a class="button button-secondary" href="/orders">重置</a>
+                </form>
+            </div>
+
+            <div class="data-meta-row">
+                <span class="meta-chip">列视图：订单类型 / 入金 / 出金 / 目标账号 / 状态</span>
+                <span class="meta-chip">行内补录</span>
+                <span class="meta-chip">单行推进状态</span>
+                {% if selected_keyword or selected_customer_id or selected_company_account_id or selected_status %}
+                <span class="meta-chip">当前为筛选视图</span>
+                {% endif %}
+            </div>
+
+            <div class="sheet-grid-shell">
+                <table class="sheet-grid">
+                    <thead>
+                        <tr>
+                            <th><a class="sort-link" href="{{ build_orders_url(sort_by='created_at', sort_dir='asc' if selected_sort_by == 'created_at' and selected_sort_dir == 'desc' else 'desc') }}">订单</a></th>
+                            <th><a class="sort-link" href="{{ build_orders_url(sort_by='customer', sort_dir='asc' if selected_sort_by == 'customer' and selected_sort_dir == 'desc' else 'desc') }}">客户</a></th>
+                            <th><a class="sort-link" href="{{ build_orders_url(sort_by='deposit_amount', sort_dir='asc' if selected_sort_by == 'deposit_amount' and selected_sort_dir == 'desc' else 'desc') }}">入金</a></th>
+                            <th>出金信息</th>
+                            <th>目标账号</th>
+                            <th><a class="sort-link" href="{{ build_orders_url(sort_by='status', sort_dir='asc' if selected_sort_by == 'status' and selected_sort_dir == 'desc' else 'desc') }}">状态</a></th>
+                            <th>备注</th>
+                            <th>动作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <div class="grid-primary">#{{ order.id }} {{ order.order_type }}</div>
+                                <div class="grid-secondary">{{ order.company_account.name }}</div>
+                                <div class="grid-secondary">{{ order.supplier.name if order.supplier else "直接入账" }}</div>
+                            </td>
+                            <td>
+                                <div class="grid-primary">{{ order.customer.name }}</div>
+                            </td>
+                            <td>
+                                <div class="grid-primary">{{ order.deposit_amount }} {{ order.deposit_currency }}</div>
+                            </td>
+                            <td>
+                                {% if order.payout_amount and order.payout_currency %}
+                                    <div class="grid-primary">{{ order.payout_amount }} {{ order.payout_currency }}</div>
+                                {% else %}
+                                    <div class="grid-secondary">待补录</div>
+                                {% endif %}
+
+                                {% if order.status != "已完成" and (not order.payout_amount or not order.payout_currency) %}
+                                <form method="post" action="/orders/{{ order.id }}/payout" class="cell-editor">
+                                    <input type="number" name="payout_amount" min="0.01" step="0.01" placeholder="金额" required>
+                                    <select name="payout_currency" required>
+                                        <option value="">币种</option>
+                                        {% for currency in currencies %}
+                                        <option value="{{ currency }}">{{ currency }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="button button-small" type="submit">保存</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if order.target_account %}
+                                    <div class="grid-primary">{{ order.target_account.account_name }}</div>
+                                    <div class="grid-secondary">{{ order.target_account.currency }}</div>
+                                {% else %}
+                                    <div class="grid-secondary">待补录</div>
+                                {% endif %}
+
+                                {% if order.status != "已完成" and not order.target_account %}
+                                <form method="post" action="/orders/{{ order.id }}/target-account" class="cell-editor">
+                                    <select name="target_account_id" required>
+                                        <option value="">选择目标账号</option>
+                                        {% for account in target_accounts %}
+                                            {% if account.customer_id == order.customer_id %}
+                                            <option value="{{ account.id }}">{{ account.account_name }} / {{ account.currency }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    <button class="button button-small" type="submit">保存</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status-pill status-{{ order.status|replace(' ', '-') }}">{{ order.status }}</span>
+                            </td>
+                            <td>
+                                <div class="grid-secondary">{{ order.notes or "无备注" }}</div>
+                                <form method="post" action="/orders/{{ order.id }}/notes" class="cell-editor">
+                                    <input type="text" name="notes" value="{{ order.notes or '' }}" placeholder="编辑备注">
+                                    <button class="button button-small" type="submit">保存</button>
+                                </form>
+                            </td>
+                            <td>
+                                {% if order.status != "已完成" %}
+                                <form method="post" action="/orders/{{ order.id }}/advance">
+                                    <button class="button button-small" type="submit">推进</button>
+                                </form>
+                                {% else %}
+                                <span class="grid-secondary">已完成</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="empty">暂无订单</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
-    <div class="table-shell">
-        <table>
-            <thead><tr><th>ID</th><th>类型</th><th>客户</th><th>中转商</th><th>公司账号</th><th>入账</th><th>转出</th><th>目标账号</th><th>状态</th><th>操作</th></tr></thead>
-            <tbody>
-                {% for order in orders %}
-                <tr>
-                    <td>#{{ order.id }}</td>
-                    <td>{{ order.order_type }}</td>
-                    <td>{{ order.customer.name }}</td>
-                    <td>{{ order.supplier.name if order.supplier else "-" }}</td>
-                    <td>{{ order.company_account.name }}</td>
-                    <td>{{ order.deposit_amount }} {{ order.deposit_currency }}</td>
-                    <td>
-                        {% if order.payout_amount and order.payout_currency %}
-                        {{ order.payout_amount }} {{ order.payout_currency }}
-                        {% else %}
-                        <span class="empty">待确认</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if order.target_account %}
-                        {{ order.target_account.account_name }} / {{ order.target_account.currency }}
-                        {% else %}
-                        <span class="empty">待确认</span>
-                        {% endif %}
-                    </td>
-                    <td><span class="badge">{{ order.status }}</span></td>
-                    <td>
-                        {% if order.status != "已完成" and (not order.payout_amount or not order.payout_currency) %}
-                        <form method="post" action="/orders/{{ order.id }}/payout" class="table-form">
-                            <input type="number" name="payout_amount" min="0.01" step="0.01" placeholder="转出金额" required>
-                            <select name="payout_currency" required>
-                                <option value="">选择转出币种</option>
-                                {% for currency in currencies %}
-                                <option value="{{ currency }}">{{ currency }}</option>
-                                {% endfor %}
-                            </select>
-                            <button class="button button-small" type="submit">保存转出信息</button>
-                        </form>
-                        {% endif %}
-                        {% if order.status != "已完成" and not order.target_account %}
-                        <form method="post" action="/orders/{{ order.id }}/target-account" class="table-form">
-                            <select name="target_account_id" required>
-                                <option value="">选择转出账号</option>
-                                {% for account in target_accounts %}
-                                    {% if account.customer_id == order.customer_id %}
-                                    <option value="{{ account.id }}">{{ account.account_name }} / {{ account.currency }}</option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                            <button class="button button-small" type="submit">保存账号</button>
-                        </form>
-                        {% endif %}
-                        {% if order.status != "已完成" %}
-                        <form method="post" action="/orders/{{ order.id }}/advance"><button class="button button-small" type="submit">推进状态</button></form>
-                        {% else %}
-                        已完成
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="10" class="empty">暂无订单</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
 </section>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    (() => {
+        const customerSelect = document.getElementById('filter-customer');
+        const targetSelect = document.getElementById('filter-target-account');
+        if (!customerSelect || !targetSelect) return;
+
+        const syncTargetOptions = () => {
+            const customerId = customerSelect.value;
+            for (const option of targetSelect.options) {
+                if (!option.dataset.customerId) continue;
+                option.hidden = customerId !== "" && option.dataset.customerId !== customerId;
+            }
+            if (targetSelect.selectedOptions[0] && targetSelect.selectedOptions[0].hidden) {
+                targetSelect.value = "";
+            }
+        };
+
+        customerSelect.addEventListener('change', syncTargetOptions);
+        syncTargetOptions();
+    })();
+</script>
 {% endblock %}

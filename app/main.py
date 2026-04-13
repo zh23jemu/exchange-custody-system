@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlencode
 
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
@@ -31,6 +32,7 @@ from .services import (
     get_orders,
     get_rates_map,
     seed_default_rates,
+    update_order_notes,
     update_order_payout_details,
     update_order_target_account,
     update_exchange_rate,
@@ -99,6 +101,11 @@ app.mount("/static", StaticFiles(directory=str(BASE_PATH / "static")), name="sta
 
 
 @app.get("/")
+def root():
+    return RedirectResponse("/orders", status_code=303)
+
+
+@app.get("/dashboard")
 def home(request: Request, db: Session = Depends(get_db)):
     return render(
         request,
@@ -120,7 +127,7 @@ def create_sample_data_route(request: Request, db: Session = Depends(get_db)):
         flash(request, "示例数据已初始化，可以直接开始体验订单、兑换和流水功能")
     except BusinessError as exc:
         flash(request, str(exc), "error")
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse("/dashboard", status_code=303)
 
 
 @app.get("/entities")
@@ -202,7 +209,38 @@ def create_customer_target_account_route(
 
 
 @app.get("/orders")
-def orders_page(request: Request, status: str | None = None, db: Session = Depends(get_db)):
+def orders_page(
+    request: Request,
+    status: str | None = None,
+    customer_id: str | None = None,
+    company_account_id: str | None = None,
+    target_account_id: str | None = None,
+    keyword: str | None = None,
+    view_mode: str | None = None,
+    sort_by: str | None = None,
+    sort_dir: str | None = None,
+    db: Session = Depends(get_db),
+):
+    parsed_customer_id = parse_optional_int(customer_id)
+    parsed_company_account_id = parse_optional_int(company_account_id)
+    parsed_target_account_id = parse_optional_int(target_account_id)
+
+    def build_orders_url(**overrides):
+        params = {
+            "status": status or "",
+            "customer_id": parsed_customer_id or "",
+            "company_account_id": parsed_company_account_id or "",
+            "target_account_id": parsed_target_account_id or "",
+            "keyword": keyword or "",
+            "view_mode": view_mode or "",
+            "sort_by": sort_by or "",
+            "sort_dir": sort_dir or "",
+        }
+        params.update(overrides)
+        cleaned = {key: value for key, value in params.items() if value not in ("", None)}
+        query = urlencode(cleaned)
+        return "/orders" + (f"?{query}" if query else "")
+
     return render(
         request,
         "orders.html",
@@ -211,8 +249,26 @@ def orders_page(request: Request, status: str | None = None, db: Session = Depen
             "suppliers": db.scalars(select(Supplier).order_by(Supplier.name)).all(),
             "company_accounts": db.scalars(select(CompanyAccount).order_by(CompanyAccount.name)).all(),
             "target_accounts": db.scalars(select(CustomerTargetAccount).order_by(CustomerTargetAccount.created_at.desc())).all(),
-            "orders": get_orders(db, status=status),
+            "orders": get_orders(
+                db,
+                status=status,
+                customer_id=parsed_customer_id,
+                company_account_id=parsed_company_account_id,
+                target_account_id=parsed_target_account_id,
+                keyword=keyword,
+                view_mode=view_mode,
+                sort_by=sort_by,
+                sort_dir=sort_dir,
+            ),
             "selected_status": status or "",
+            "selected_customer_id": parsed_customer_id,
+            "selected_company_account_id": parsed_company_account_id,
+            "selected_target_account_id": parsed_target_account_id,
+            "selected_keyword": keyword or "",
+            "selected_view_mode": view_mode or "",
+            "selected_sort_by": sort_by or "created_at",
+            "selected_sort_dir": sort_dir or "desc",
+            "build_orders_url": build_orders_url,
             "all_statuses": ["待处理", "交中转商", "在公司账号", "已完成"],
         },
     )
@@ -328,6 +384,21 @@ def update_order_payout_route(
         )
         flash(request, f"订单 #{order_id} 的转出信息已更新")
     except (BusinessError, ArithmeticError, ValueError) as exc:
+        flash(request, str(exc), "error")
+    return RedirectResponse("/orders", status_code=303)
+
+
+@app.post("/orders/{order_id}/notes")
+def update_order_notes_route(
+    request: Request,
+    order_id: int,
+    notes: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    try:
+        update_order_notes(db, order_id=order_id, notes=notes)
+        flash(request, f"订单 #{order_id} 备注已更新")
+    except BusinessError as exc:
         flash(request, str(exc), "error")
     return RedirectResponse("/orders", status_code=303)
 

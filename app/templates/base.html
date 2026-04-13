@@ -14,8 +14,8 @@
                 <p>资金托管、订单流转、兑换和客户流水的一体化管理</p>
             </div>
             <nav class="nav">
-                <a href="/">总览</a>
-                <a href="/orders">订单管理</a>
+                <a href="/orders">订单工作台</a>
+                <a href="/dashboard">系统概览</a>
                 <a href="/entities">实体管理</a>
                 <a href="/balances">账号余额</a>
                 <a href="/exchange">货币兑换</a>
@@ -41,5 +41,6 @@
         {% endif %}
         {% block content %}{% endblock %}
     </main>
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>

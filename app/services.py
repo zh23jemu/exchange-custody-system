@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 
-from sqlalchemy import func, select
+from sqlalchemy import asc, desc, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from .constants import (
@@ -438,20 +438,101 @@ def update_exchange_rate(db: Session, currency: str, rate_to_aud_base: Decimal) 
     return row
 
 
-def get_orders(db: Session, status: str | None = None) -> list[Order]:
-    stmt = (
-        select(Order)
-        .options(
-            joinedload(Order.customer),
-            joinedload(Order.supplier),
-            joinedload(Order.company_account),
-            joinedload(Order.target_account),
-        )
-        .order_by(Order.created_at.desc())
+def get_orders(
+    db: Session,
+    status: str | None = None,
+    customer_id: int | None = None,
+    company_account_id: int | None = None,
+    target_account_id: int | None = None,
+    keyword: str | None = None,
+    view_mode: str | None = None,
+    sort_by: str | None = None,
+    sort_dir: str | None = None,
+) -> list[Order]:
+    stmt = select(Order).options(
+        joinedload(Order.customer),
+        joinedload(Order.supplier),
+        joinedload(Order.company_account),
+        joinedload(Order.target_account),
     )
+    needs_customer_join = False
+    needs_company_join = False
+    needs_supplier_join = False
+    needs_target_join = False
+
     if status:
         stmt = stmt.where(Order.status == status)
+    if customer_id is not None:
+        stmt = stmt.where(Order.customer_id == customer_id)
+    if company_account_id is not None:
+        stmt = stmt.where(Order.company_account_id == company_account_id)
+    if target_account_id is not None:
+        stmt = stmt.where(Order.target_account_id == target_account_id)
+    if view_mode == "needs_completion":
+        stmt = stmt.where(
+            Order.status != ORDER_STATUS_COMPLETED,
+            or_(
+                Order.target_account_id.is_(None),
+                Order.payout_amount.is_(None),
+                Order.payout_currency.is_(None),
+            ),
+        )
+    keyword_pattern = None
+    if keyword and keyword.strip():
+        keyword_pattern = f"%{keyword.strip()}%"
+        needs_customer_join = True
+        needs_company_join = True
+        needs_supplier_join = True
+        needs_target_join = True
+
+    sort_map = {
+        "created_at": Order.created_at,
+        "customer": Customer.name,
+        "account": CompanyAccount.name,
+        "deposit_amount": Order.deposit_amount,
+        "status": Order.status,
+    }
+    selected_sort = sort_by or "created_at"
+    sort_column = sort_map.get(selected_sort, Order.created_at)
+    if selected_sort == "customer":
+        needs_customer_join = True
+    elif selected_sort == "account":
+        needs_company_join = True
+
+    if needs_customer_join:
+        stmt = stmt.join(Order.customer)
+    if needs_company_join:
+        stmt = stmt.join(Order.company_account)
+    if needs_supplier_join:
+        stmt = stmt.outerjoin(Order.supplier)
+    if needs_target_join:
+        stmt = stmt.outerjoin(Order.target_account)
+
+    if keyword_pattern:
+        stmt = stmt.where(
+            or_(
+                Customer.name.ilike(keyword_pattern),
+                CompanyAccount.name.ilike(keyword_pattern),
+                Supplier.name.ilike(keyword_pattern),
+                CustomerTargetAccount.account_name.ilike(keyword_pattern),
+                Order.notes.ilike(keyword_pattern),
+                Order.order_type.ilike(keyword_pattern),
+            )
+        )
+
+    order_expr = asc(sort_column) if (sort_dir or "desc") == "asc" else desc(sort_column)
+    stmt = stmt.order_by(order_expr, Order.created_at.desc())
     return list(db.scalars(stmt).unique().all())
+
+
+def update_order_notes(db: Session, order_id: int, notes: str) -> Order:
+    order = db.get(Order, order_id)
+    if order is None:
+        raise BusinessError("订单不存在")
+    order.notes = notes.strip()
+    db.commit()
+    db.refresh(order)
+    return order
 
 
 def get_dashboard_stats(db: Session) -> dict[str, int]:
