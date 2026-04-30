@@ -1,0 +1,107 @@
+{
+  "generated_at": "2026-04-30T00:00:00Z",
+  "project": "exchange-custody-system",
+  "description": "换汇资金托管系统 · 面向小型换汇/钱庄业务的轻量级资金流转追踪工具",
+  "root_claude_md": "CLAUDE.md",
+  "tech_stack": {
+    "language": "Python 3.13",
+    "web_framework": "FastAPI 0.116.1",
+    "template_engine": "Jinja2 3.1.6",
+    "orm": "SQLAlchemy 2.0.43",
+    "database": "SQLite (data/app.db)",
+    "server": "Uvicorn 0.35.0",
+    "test_framework": "pytest 8.4.1 + httpx 0.28.1",
+    "session": "itsdangerous 2.2.0 (SessionMiddleware)"
+  },
+  "modules": [
+    {
+      "path": "app",
+      "claude_md": "app/CLAUDE.md",
+      "description": "应用主体：路由、业务逻辑、数据模型、模板、样式",
+      "entry": "app/main.py",
+      "key_files": [
+        "app/main.py",
+        "app/services.py",
+        "app/models.py",
+        "app/db.py",
+        "app/constants.py",
+        "app/static/style.css"
+      ],
+      "templates": [
+        "app/templates/base.html",
+        "app/templates/index.html",
+        "app/templates/orders.html",
+        "app/templates/entities.html",
+        "app/templates/exchange.html",
+        "app/templates/balances.html",
+        "app/templates/statement.html",
+        "app/templates/customer_ledger.html",
+        "app/templates/rates.html"
+      ],
+      "coverage": {
+        "entry_scanned": true,
+        "interfaces_scanned": true,
+        "data_model_scanned": true,
+        "tests_present": true
+      },
+      "gaps": []
+    },
+    {
+      "path": "tests",
+      "claude_md": "tests/CLAUDE.md",
+      "description": "pytest 集成测试，内存 SQLite 隔离，覆盖主要业务流程",
+      "key_files": ["tests/test_app.py"],
+      "coverage": {
+        "entry_scanned": true,
+        "interfaces_scanned": true,
+        "data_model_scanned": true,
+        "tests_present": true
+      },
+      "gaps": []
+    },
+    {
+      "path": "scripts",
+      "claude_md": "scripts/CLAUDE.md",
+      "description": "数据库迁移脚本（SQLite 字段约束变更）",
+      "key_files": ["scripts/migrate_orders_target_account_nullable.py"],
+      "coverage": {
+        "entry_scanned": true,
+        "interfaces_scanned": true,
+        "data_model_scanned": true,
+        "tests_present": false
+      },
+      "gaps": ["无对应测试"]
+    }
+  ],
+  "database": {
+    "type": "SQLite",
+    "default_path": "data/app.db",
+    "env_override": "DATABASE_URL",
+    "tables": [
+      "customers",
+      "suppliers",
+      "company_accounts",
+      "customer_target_accounts",
+      "orders",
+      "order_status_logs",
+      "exchange_rates",
+      "exchange_records",
+      "account_balance_ledger"
+    ]
+  },
+  "business_domain": {
+    "supported_currencies": ["AUD", "USD", "CNY", "EUR"],
+    "order_types": ["现金订单", "转账订单"],
+    "cash_order_flow": ["待处理", "交中转商", "在公司账号", "已完成"],
+    "bank_order_flow": ["在公司账号", "已完成"],
+    "ledger_entry_kinds": ["order_inflow", "order_payout", "exchange_out", "exchange_in"]
+  },
+  "scan_summary": {
+    "total_source_files_estimated": 20,
+    "scanned_files": 20,
+    "coverage_percent": 100,
+    "truncated": false,
+    "ignored_dirs": [".venv", ".git", "__pycache__", "data"]
+  },
+  "gaps": []
+}
